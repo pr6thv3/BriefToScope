@@ -1,0 +1,29 @@
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+
+
+class Settings(BaseSettings):
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    clerk_secret_key: str = ""
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    docusign_client_id: str = ""
+    docusign_client_secret: str = ""
+    docusign_account_id: str = ""
+    docusign_base_url: str = ""
+    frontend_url: str = ""
+    backend_url: str = ""
+    demo_mode: bool = False
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        extra = "ignore"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
