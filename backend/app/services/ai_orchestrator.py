@@ -36,6 +36,9 @@ from app.models.schemas import SOWOutput, SOWContent, RiskFlag, ExtractedBrief
 from app.models.ai_schemas import (
     A1Output, BriefExtractorOutput, A3Output, A4Output, A5Output, A6Output, A7Output,
     PipelineState,
+    ClauseGeneratorOutput, RevisionPolicy, PaymentSchedule, PaymentMilestone,
+    SOWComposerOutput, SOWSection,
+    QualityCheckerOutput,
 )
 
 logger = get_logger(__name__)
@@ -89,28 +92,40 @@ class AIOrchestrator:
         self.state.a3_scope = a3
 
         # ── A4 ──────────────────────────────────────
-        a4 = await self._run_a4(a2, a3)
+        a4 = await self._run_a4(a1, a2, a3, industry, tone)
         self.state.a4_risks = a4
 
         # ── A5 ──────────────────────────────────────
-        a5 = await self._run_a5(a2, a3, industry)
+        a5 = await self._run_a5(a1, a2, a3, a4, industry, tone)
         self.state.a5_clauses = a5
 
         # ── A6 ──────────────────────────────────────
-        a6 = await self._run_a6(a2, a3, a5, industry, tone)
+        a6 = await self._run_a6(a1, a2, a3, a4, a5, industry, tone)
         self.state.a6_sow = a6
 
         # ── A7 ──────────────────────────────────────
-        a7 = await self._run_a7(a6, a2)
+        a7 = await self._run_a7(a1, a2, a3, a4, a5, a6, industry, tone)
         self.state.a7_quality = a7
 
+        blocking = sum(1 for r in a4.scope_creep_risks if r.blocking_risk)
+        warnings = sum(1 for s in a7.section_reviews if s.status == "warning")
         logger.info(
-            f"[PIPELINE] === Completed: confidence={a7.confidence_score:.2f}, "
-            f"risks={len(a4.risk_flags)}, missing={a7.missing_sections} ==="
+            f"[PIPELINE] === Completed: quality={a7.overall_quality_score}, "
+            f"approval={a7.approval_status}, warnings={warnings}, "
+            f"risk_score={a4.overall_risk_score}, level={a4.overall_risk_level}, "
+            f"risks={len(a4.scope_creep_risks)}, blocking={blocking}, "
+            f"missing={a7.missing_sections}, ready={a7.ready_for_export} ==="
         )
 
-        # Map to public API schema
-        risk_flags = [RiskFlag(**r.model_dump()) for r in a4.risk_flags]
+        # Map to public API schema — prefer rich scope_creep_risks, fall back to risk_flags
+        source_risks = a4.scope_creep_risks if a4.scope_creep_risks else a4.risk_flags
+        risk_flags = []
+        for r in source_risks:
+            d = r.model_dump()
+            # ScopeCreepRisk uses "recommended_fix"; RiskFlag expects "suggested_fix"
+            if "recommended_fix" in d:
+                d["suggested_fix"] = d.pop("recommended_fix")
+            risk_flags.append(RiskFlag(**d))
         extracted_brief = self._map_to_extracted_brief(a1, a2)
         sow_content = SOWContent(**a6.model_dump())
 
@@ -182,57 +197,110 @@ class AIOrchestrator:
                 payment_schedule=fallback["payment_schedule"],
             )
 
-    async def _run_a4(self, a2: BriefExtractorOutput, a3: A3Output) -> A4Output:
+    async def _run_a4(
+        self, a1: A1Output, a2: BriefExtractorOutput, a3: A3Output, industry: str, tone: str
+    ) -> A4Output:
         logger.info("[PIPELINE] A4 — Risk Detector started")
         try:
-            raw = await self.risk_detector.detect(a2.model_dump(), a3.model_dump())
-            if isinstance(raw, list):
-                result = A4Output(risk_flags=raw)
-            else:
-                result = A4Output.model_validate(raw)
-            logger.info(f"[PIPELINE] A4 — OK: {len(result.risk_flags)} flags")
+            result = await self.risk_detector.detect(
+                a1=a1, a2=a2, a3=a3, industry=industry, tone=tone
+            )
+            blocking = sum(1 for r in result.scope_creep_risks if r.blocking_risk)
+            logger.info(
+                f"[PIPELINE] A4 — OK: score={result.overall_risk_score}, "
+                f"level={result.overall_risk_level}, "
+                f"risks={len(result.scope_creep_risks)}, "
+                f"blocking={blocking}, "
+                f"confidence={result.risk_detection_confidence_score}"
+            )
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A4 — FAILED: {e}, using fallback risks")
-            return A4Output(risk_flags=get_fallback_risks())
+            fallback_risks = get_fallback_risks()
+            return A4Output(
+                overall_risk_score=50,
+                overall_risk_level="medium",
+                risk_summary="Risk detection failed — fallback used.",
+                scope_creep_risks=[],
+                risk_flags=fallback_risks,
+                risk_detection_confidence_score=30,
+            )
 
-    async def _run_a5(self, a2: BriefExtractorOutput, a3: A3Output, industry: str) -> A5Output:
+    async def _run_a5(
+        self, a1: A1Output, a2: BriefExtractorOutput, a3: A3Output, a4: A4Output, industry: str, tone: str
+    ) -> A5Output:
         logger.info("[PIPELINE] A5 — Clause Generator started")
         try:
-            raw = await self.clause_generator.generate(a2.model_dump(), a3.model_dump(), industry)
-            result = A5Output.model_validate(raw)
-            logger.info(f"[PIPELINE] A5 — OK: revision_policy={'set' if result.revision_policy else 'empty'}")
+            result = await self.clause_generator.generate(
+                a1=a1, a2=a2, a3=a3, a4=a4, industry=industry, tone=tone
+            )
+            logger.info(
+                f"[PIPELINE] A5 — OK: revision_defined={result.revision_policy.limits_defined}, "
+                f"milestones={len(result.payment_schedule.milestones)}, "
+                f"confidence={result.clause_generation_confidence_score}"
+            )
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A5 — FAILED: {e}, using fallback clauses")
-            return A5Output.model_validate(get_fallback_clauses())
+            return ClauseGeneratorOutput(
+                revision_policy=RevisionPolicy(summary="Fallback revision policy", clauses=["Two rounds of revisions included"], limits_defined=True),
+                payment_schedule=PaymentSchedule(
+                    summary="Fallback payment schedule",
+                    milestones=[PaymentMilestone(label="Project Start", percentage="50%", condition="Before kickoff"), PaymentMilestone(label="Final Delivery", percentage="50%", condition="Before launch")],
+                ),
+                clause_generation_confidence_score=50,
+            )
 
-    async def _run_a6(self, a2: BriefExtractorOutput, a3: A3Output, a5: A5Output, industry: str, tone: str) -> A6Output:
+    async def _run_a6(
+        self, a1: A1Output, a2: BriefExtractorOutput, a3: A3Output, a4: A4Output, a5: A5Output, industry: str, tone: str
+    ) -> A6Output:
         logger.info("[PIPELINE] A6 — SOW Composer started")
         try:
-            raw = await self.sow_composer.compose(
-                a2.model_dump(), a3.model_dump(), a5.model_dump(), industry, tone
+            result = await self.sow_composer.compose(
+                a1=a1, a2=a2, a3=a3, a4=a4, a5=a5, industry=industry, tone=tone
             )
-            result = A6Output.model_validate(raw)
-            logger.info(f"[PIPELINE] A6 — OK: overview={'set' if result.project_overview else 'empty'}")
+            logger.info(
+                f"[PIPELINE] A6 — OK: sections={len(result.sections)}, "
+                f"export_ready={result.export_ready}, "
+                f"confidence={result.composer_confidence_score}"
+            )
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A6 — FAILED: {e}, using fallback SOW")
-            return A6Output.model_validate(get_fallback_sow())
+            fallback = get_fallback_sow()
+            return SOWComposerOutput(
+                document_title="Statement of Work",
+                sections=[SOWSection(section_key=k, section_title=k.replace("_", " ").title(), content_markdown=v if isinstance(v, str) else "\n".join(f"- {i}" for i in v), order=idx + 1) for idx, (k, v) in enumerate(fallback.items())],
+                composer_confidence_score=50,
+            )
 
-    async def _run_a7(self, a6: A6Output, a2: BriefExtractorOutput) -> A7Output:
+    async def _run_a7(
+        self, a1: A1Output, a2: BriefExtractorOutput, a3: A3Output, a4: A4Output, a5: A5Output, a6: A6Output, industry: str, tone: str
+    ) -> A7Output:
         logger.info("[PIPELINE] A7 — Quality Checker started")
         try:
-            raw = await self.quality_checker.check(a6.model_dump(), a2.model_dump())
-            if isinstance(raw, dict):
-                result = A7Output.model_validate(raw)
-            else:
-                result = A7Output(confidence_score=0.75)
-            logger.info(f"[PIPELINE] A7 — OK: score={result.confidence_score:.2f}")
+            result = await self.quality_checker.check(
+                a1=a1, a2=a2, a3=a3, a4=a4, a5=a5, a6=a6, industry=industry, tone=tone
+            )
+            warnings = sum(1 for s in result.section_reviews if s.status == "warning")
+            logger.info(
+                f"[PIPELINE] A7 — OK: score={result.overall_quality_score}, "
+                f"status={result.approval_status}, warnings={warnings}, "
+                f"vague={len(result.vague_language_flags)}, blocking={len(result.blocking_issues)}, "
+                f"ready={result.ready_for_export}, confidence={result.quality_checker_confidence_score}"
+            )
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A7 — FAILED: {e}, using default quality")
-            return A7Output(confidence_score=0.72, suggestions=["Quality check failed — manual review recommended"])
+            return QualityCheckerOutput(
+                overall_quality_score=70,
+                approval_status="approved_with_warnings",
+                executive_review_summary="Quality check failed — manual review recommended.",
+                ready_for_export=True,
+                quality_checker_confidence_score=50,
+                confidence_score=0.70,
+                suggestions=["Quality check failed — manual review recommended"],
+            )
 
     # ─── API mapping helpers ─────────────────────
 

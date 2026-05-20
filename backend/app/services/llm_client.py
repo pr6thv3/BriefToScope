@@ -172,6 +172,11 @@ class LLMClient:
             })
 
         # A4 — Risk Detector
+        if "senior agency scope-risk analyst" in full_text or "scope creep prevention strategist" in full_text:
+            from app.services.risk_detector import MOCK_A4_OUTPUT
+            return json.dumps(MOCK_A4_OUTPUT.model_dump())
+
+        # Legacy A4 detection
         if "identify risks" in lower:
             return json.dumps({
                 "risk_flags": [
@@ -185,6 +190,11 @@ class LLMClient:
             })
 
         # A5 — Clause Generator
+        if "senior agency contract operations strategist" in full_text:
+            from app.services.clause_generator import MOCK_A5_OUTPUT
+            return json.dumps(MOCK_A5_OUTPUT.model_dump())
+
+        # Legacy A5 detection
         if "generate clauses" in lower:
             return json.dumps({
                 "revision_policy": "Two rounds of revisions included.",
@@ -195,6 +205,11 @@ class LLMClient:
             })
 
         # A6 — SOW Composer
+        if "senior agency statement of work composer" in full_text:
+            from app.services.sow_composer import MOCK_A6_OUTPUT
+            return json.dumps(MOCK_A6_OUTPUT.model_dump())
+
+        # Legacy A6 detection
         if "compose the final sow" in lower or ("compose the final" in lower and "clauses" in lower):
             return json.dumps({
                 "project_overview": "Redesign Acme Corp website for improved UX.",
@@ -212,6 +227,11 @@ class LLMClient:
             })
 
         # A7 — Quality Checker
+        if "senior statement of work quality assurance reviewer" in full_text:
+            from app.services.quality_checker import MOCK_A7_OUTPUT
+            return json.dumps(MOCK_A7_OUTPUT.model_dump())
+
+        # Legacy A7 detection
         if "rate quality" in lower:
             return json.dumps({"confidence_score": 0.85, "suggestions": ["Add more timeline detail"]})
 
