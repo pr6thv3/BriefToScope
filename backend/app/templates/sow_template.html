@@ -1,112 +1,184 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOW — {{ project_name }} | BriefToScope</title>
 <style>
-body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 48px; color: #1a1a2e; line-height: 1.6; }
-h1 { color: #16213e; font-size: 28px; border-bottom: 3px solid #0f3460; padding-bottom: 12px; margin-bottom: 8px; }
-.header { text-align: center; margin-bottom: 40px; }
-.meta { font-size: 13px; color: #555; margin-top: 4px; }
-h2 { color: #16213e; font-size: 18px; margin-top: 28px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-p, li { font-size: 13px; color: #333; }
-ul { margin-top: 6px; padding-left: 20px; }
-.section { margin-bottom: 20px; }
-.risk-box { background: #fff8e1; border-left: 4px solid #ffb300; padding: 12px 14px; margin: 8px 0; border-radius: 4px; }
-.risk-box strong { color: #e65100; }
-.confidence { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-.footer { margin-top: 60px; font-size: 11px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 16px; }
+{{ css }}
 </style>
 </head>
 <body>
-<div class="header">
-<h1>Statement of Work</h1>
-<div class="meta">
-<strong>Client:</strong> {{ client_name }} &nbsp;|&nbsp;
-<strong>Project:</strong> {{ project_name }} &nbsp;|&nbsp;
-<strong>Industry:</strong> {{ industry }}
-</div>
+
+<!-- ============ COVER BLOCK ============ -->
+<div class="cover">
+  <div class="cover__brand">BriefToScope</div>
+  <h1 class="cover__title">Statement of Work</h1>
+  <p class="cover__subtitle">{{ project_name }}</p>
+
+  <div class="cover__meta">
+    <div class="cover__meta-item">
+      <span class="cover__meta-label">Client</span>
+      <span class="cover__meta-value">{{ client_name or 'Client' }}</span>
+    </div>
+    <div class="cover__meta-item">
+      <span class="cover__meta-label">Industry</span>
+      <span class="cover__meta-value">{{ industry or 'General' }}</span>
+    </div>
+    <div class="cover__meta-item">
+      <span class="cover__meta-label">Date</span>
+      <span class="cover__meta-value">{{ generated_date }}</span>
+    </div>
+    <div class="cover__meta-item">
+      <span class="cover__meta-label">Version</span>
+      <span class="cover__meta-value">{{ document_version }}</span>
+    </div>
+    <div class="cover__meta-item">
+      <span class="cover__meta-label">Document ID</span>
+      <span class="cover__meta-value">{{ sow_id_short }}</span>
+    </div>
+  </div>
+
+  {% if confidence_score is not none %}
+  <div class="quality-badge">
+    <span class="quality-badge__dot"></span>
+    AI Confidence: {{ confidence_display }}%
+  </div>
+  {% endif %}
 </div>
 
+<!-- ============ SOW SECTIONS ============ -->
+{% for section in sections %}
 <div class="section">
-<h2>Project Overview</h2>
-<p>{{ content.project_overview }}</p>
+  <h2 class="section__heading">
+    <span class="section__number">{{ section.order }}</span>
+    {{ section.title }}
+  </h2>
+
+  {# Payment schedule → milestone table #}
+  {% if section.key == 'payment_schedule' and section.list_items %}
+  <table class="payment-table">
+    <thead>
+      <tr>
+        <th style="width: 8%">#</th>
+        <th>Milestone</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in section.list_items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# Timeline → phased table #}
+  {% elif section.key == 'timeline' and section.list_items %}
+  <table class="payment-table">
+    <thead>
+      <tr>
+        <th style="width: 8%">#</th>
+        <th>Phase</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in section.list_items %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {# All other list sections → bullet list #}
+  {% elif section.list_items %}
+  <ul class="section__list">
+    {% for item in section.list_items %}
+    <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
+
+  {# Text sections #}
+  {% elif section.text %}
+  <p class="section__text">{{ section.text }}</p>
+
+  {# Empty sections → graceful placeholder #}
+  {% else %}
+  <p class="section__text" style="color: var(--color-text-muted); font-style: italic;">
+    Content pending — this section will be populated during project scoping.
+  </p>
+  {% endif %}
+</div>
+{% endfor %}
+
+<!-- ============ RISK WARNINGS ============ -->
+{% if risk_flags %}
+<div class="risk-block">
+  <h2 class="risk-block__title">
+    ⚠ Scope Risk Warnings
+  </h2>
+  {% for risk in risk_flags %}
+  <div class="risk-card risk-card--{{ risk.severity or 'medium' }}">
+    <div class="risk-card__severity">{{ (risk.severity or 'medium') | upper }} RISK</div>
+    <div class="risk-card__title">{{ risk.title or 'Unnamed Risk' }}</div>
+    {% if risk.description %}
+    <div class="risk-card__description">{{ risk.description }}</div>
+    {% endif %}
+    {% if risk.suggested_fix %}
+    <div class="risk-card__fix">Recommendation: {{ risk.suggested_fix }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ============ SIGNATURE SECTION ============ -->
+<div class="signature-section">
+  <h2 class="signature-section__heading">Authorization & Signature</h2>
+  <p class="section__text" style="margin-bottom: 28px;">
+    By signing below, both parties agree to the terms outlined in this Statement of Work.
+    This document becomes binding upon execution by authorized representatives.
+  </p>
+  <div class="signature-grid">
+    <div class="signature-box">
+      <div class="signature-box__label">Client — {{ client_name or 'Client' }}</div>
+      <div class="signature-box__line"></div>
+      <div class="signature-box__field">
+        <span>Authorized Signature</span>
+        <span>Date: _______________</span>
+      </div>
+      <div class="signature-box__line"></div>
+      <div class="signature-box__field">
+        <span>Printed Name & Title</span>
+      </div>
+    </div>
+    <div class="signature-box">
+      <div class="signature-box__label">Agency / Provider</div>
+      <div class="signature-box__line"></div>
+      <div class="signature-box__field">
+        <span>Authorized Signature</span>
+        <span>Date: _______________</span>
+      </div>
+      <div class="signature-box__line"></div>
+      <div class="signature-box__field">
+        <span>Printed Name & Title</span>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="section">
-<h2>Objectives</h2>
-<ul>
-{% for o in content.objectives %}<li>{{ o }}</li>{% endfor %}
-</ul>
+<!-- ============ FOOTER ============ -->
+<div class="doc-footer">
+  <div class="doc-footer__brand">BriefToScope</div>
+  <p class="doc-footer__disclaimer">
+    This document was generated by BriefToScope, an AI-powered Statement of Work platform.
+    This document is confidential and intended solely for the named parties.
+    Content should be reviewed by authorized stakeholders before execution.
+  </p>
 </div>
 
-<div class="section">
-<h2>Scope of Work</h2>
-<ul>
-{% for s in content.scope_of_work %}<li>{{ s }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Deliverables</h2>
-<ul>
-{% for d in content.deliverables %}<li>{{ d }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Timeline</h2>
-<ul>
-{% for t in content.timeline %}<li>{{ t }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Payment Schedule</h2>
-<ul>
-{% for p in content.payment_schedule %}<li>{{ p }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Client Responsibilities</h2>
-<ul>
-{% for r in content.client_responsibilities %}<li>{{ r }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Revision Policy</h2>
-<p>{{ content.revision_policy }}</p>
-</div>
-
-<div class="section">
-<h2>Out of Scope</h2>
-<ul>
-{% for o in content.out_of_scope %}<li>{{ o }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Assumptions</h2>
-<ul>
-{% for a in content.assumptions %}<li>{{ a }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Acceptance Criteria</h2>
-<ul>
-{% for a in content.acceptance_criteria %}<li>{{ a }}</li>{% endfor %}
-</ul>
-</div>
-
-<div class="section">
-<h2>Signature Section</h2>
-<p>{{ content.signature_section }}</p>
-</div>
-
-<div class="footer">
-<p>Generated by BriefToScope &mdash; AI-powered SOW generation</p>
-</div>
 </body>
 </html>

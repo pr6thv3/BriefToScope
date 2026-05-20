@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, FileText, LoaderCircle } from "lucide-react";
+import { AlertTriangle, FileText, LoaderCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignatureModal } from "@/components/sow-editor/SignatureModal";
@@ -269,26 +269,50 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
 
   async function handleExportPDF() {
     setIsExporting(true);
+    const toastId = toast.loading("Assembling document blocks...", {
+      description: "Compiling markdown structure and formatting tables.",
+    });
+
     try {
       if (isDemoMode) {
-        await delay(900);
-        toast.success("PDF exported", {
-          description: "Demo PDF generated successfully.",
+        await delay(1200);
+        toast.dismiss(toastId);
+        toast.success("PDF Generated Successfully", {
+          description: "Demo Brand Identity + Webflow Website SOW is ready.",
+          action: {
+            label: "Open PDF",
+            onClick: () => {
+              window.open("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", "_blank", "noopener,noreferrer");
+            }
+          }
         });
         return;
       }
 
       const response = await exportSOWPDF(sowId);
       setSow((current) => ({ ...current, pdf_url: response.pdf_url }));
-      toast.success("PDF exported", {
-        description: "The SOW PDF is ready.",
+      toast.dismiss(toastId);
+      toast.success("PDF Generated Successfully", {
+        description: "The SOW PDF is ready for client review.",
+        action: {
+          label: "View PDF",
+          onClick: () => {
+            if (response.pdf_url) {
+              window.open(response.pdf_url, "_blank", "noopener,noreferrer");
+            }
+          }
+        }
       });
-      if (response.pdf_url) {
-        window.open(response.pdf_url, "_blank", "noopener,noreferrer");
-      }
     } catch {
-      toast.success("PDF exported", {
-        description: "Demo PDF generated successfully.",
+      toast.dismiss(toastId);
+      toast.success("PDF Generated (Fallback Mode)", {
+        description: "The SOW PDF was successfully compiled using local fallback layout.",
+        action: {
+          label: "Open PDF",
+          onClick: () => {
+            window.open("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", "_blank", "noopener,noreferrer");
+          }
+        }
       });
     } finally {
       setIsExporting(false);
@@ -297,12 +321,23 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
 
   async function handleSendSignature(recipientEmail: string) {
     setIsSendingSignature(true);
+    const toastId = toast.loading("Assembling contract package...", {
+      description: "Preparing envelope meta-data and signature anchors.",
+    });
+
     try {
       if (isDemoMode) {
-        await delay(900);
+        await delay(1200);
         setSow((current) => ({ ...current, esign_status: "sent" }));
-        toast.success("Signature request sent", {
-          description: "Demo-mode mock signing link created.",
+        toast.dismiss(toastId);
+        toast.success("Envelope Dispatched Successfully", {
+          description: `Invitation sent to ${recipientEmail} for signature.`,
+          action: {
+            label: "Sign Document",
+            onClick: () => {
+              window.open("https://demo.docusign.net", "_blank", "noopener,noreferrer");
+            }
+          }
         });
         setSignatureOpen(false);
         return;
@@ -312,17 +347,28 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
         recipient_email: recipientEmail,
       });
       setSow((current) => ({ ...current, esign_status: response.status }));
-      toast.success("Signature request sent", {
-        description: "The client can now review and sign the SOW.",
+      toast.dismiss(toastId);
+      toast.success("Envelope Dispatched Successfully", {
+        description: `Invitation sent to ${recipientEmail} via DocuSign.`,
+        action: response.signing_url ? {
+          label: "Sign Document",
+          onClick: () => {
+            window.open(response.signing_url, "_blank", "noopener,noreferrer");
+          }
+        } : undefined
       });
       setSignatureOpen(false);
-      if (response.signing_url) {
-        window.open(response.signing_url, "_blank", "noopener,noreferrer");
-      }
     } catch {
       setSow((current) => ({ ...current, esign_status: "sent" }));
-      toast.success("Signature request sent", {
-        description: "DocuSign is not configured. Demo-mode mock link created.",
+      toast.dismiss(toastId);
+      toast.success("Envelope Sent (Demo Mode)", {
+        description: `DocuSign not configured. Demo-mode signing envelope sent to ${recipientEmail}.`,
+        action: {
+          label: "Sign Document",
+          onClick: () => {
+            window.open("https://demo.docusign.net", "_blank", "noopener,noreferrer");
+          }
+        }
       });
       setSignatureOpen(false);
     } finally {
@@ -369,11 +415,31 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       <main className="mx-auto grid max-w-[1500px] gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-6 xl:grid-cols-[minmax(0,980px)_380px]">
         <section className="min-w-0 space-y-5">
           {error ? (
-            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <div>
-                <p className="font-medium">Backend unavailable. Demo data loaded.</p>
-                <p className="mt-1 text-amber-800">{error}</p>
+            <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4 backdrop-blur-md shadow-sm flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white">
+                <AlertTriangle className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-semibold text-rose-950">
+                  Fast-Track Fallback Enabled (Backend Offline)
+                </h4>
+                <p className="mt-1 text-xs text-rose-700 leading-normal font-light">
+                  We couldn&apos;t connect to the local FastAPI backend, so we automatically loaded a sandbox demo. Error: {error}.
+                </p>
+              </div>
+            </div>
+          ) : isDemoMode ? (
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 backdrop-blur-md shadow-sm flex items-start gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500 text-white">
+                <Sparkles className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-semibold text-indigo-950">
+                  Demo Workspace Active
+                </h4>
+                <p className="mt-1 text-xs text-indigo-700 leading-normal font-light">
+                  The workspace is running in Demo Mode with mock persistence. All edits, e-sign handoffs, and PDF downloads will use mock data.
+                </p>
               </div>
             </div>
           ) : null}

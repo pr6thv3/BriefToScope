@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS projects (
     tone VARCHAR(50) DEFAULT 'Professional' NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    CONSTRAINT chk_project_status CHECK (status IN ('active', 'archived', 'completed'))
+    CONSTRAINT chk_project_status CHECK (status IN ('active', 'generating', 'completed', 'failed', 'archived'))
 );
 
 CREATE TRIGGER trigger_update_projects_updated_at
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS sows (
     pdf_url TEXT DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    CONSTRAINT chk_sow_status CHECK (status IN ('draft', 'final', 'signed'))
+    CONSTRAINT chk_sow_status CHECK (status IN ('draft', 'ready', 'exported', 'final', 'signed'))
 );
 
 CREATE TRIGGER trigger_update_sows_updated_at
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS esign_requests (
     signed_document_url TEXT DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    CONSTRAINT chk_esign_provider CHECK (provider IN ('docusign', 'pandadoc', 'mock')),
+    CONSTRAINT chk_esign_provider CHECK (provider IN ('docusign', 'pandadoc', 'demo', 'mock')),
     CONSTRAINT chk_esign_status CHECK (status IN ('sent', 'delivered', 'completed', 'declined', 'voided', 'mock_signed'))
 );
 

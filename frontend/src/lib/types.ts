@@ -176,7 +176,11 @@ export type UpdateSOWResponse = {
 };
 
 export type PDFExportResponse = {
+  success: boolean;
+  sow_id: string;
   pdf_url: string;
+  filename: string;
+  generated_at: string;
 };
 
 export type ESignResponse = {

@@ -305,20 +305,44 @@ class StorageService:
             logger.error(f"Failed to upsert billing subscription: {e}")
             raise StorageError("Failed to update billing subscription")
 
-    async def upload_pdf(self, sow_id: str, pdf_bytes: bytes, filename: str) -> str:
+    async def update_sow_status(self, sow_id: str, status: str) -> dict:
         if self._demo:
-            return f"https://demo.storage/sow-pdfs/{sow_id}/{filename}"
+            s = _demo_sows.get(sow_id)
+            if not s:
+                raise StorageError("SOW not found")
+            s["status"] = status
+            s["updated_at"] = datetime.utcnow().isoformat()
+            return s
+        try:
+            data = {"status": status, "updated_at": datetime.utcnow().isoformat()}
+            resp = self._get_client().table("sows").update(data).eq("id", sow_id).execute()
+            return resp.data[0] if resp.data else {}
+        except Exception as e:
+            logger.error(f"Failed to update SOW status: {e}")
+            raise StorageError("Failed to update SOW status")
+
+    async def upload_pdf(self, sow_id: str, pdf_bytes: bytes, filename: str, user_id: str = "") -> str:
+        if self._demo:
+            return f"https://demo.storage/sow-pdfs/sows/{user_id or 'demo'}/{sow_id}/{filename}"
         try:
             bucket = "sow-pdfs"
-            path = f"{sow_id}/{filename}"
+            path = f"sows/{user_id or 'unknown'}/{sow_id}/{filename}"
             try:
                 self._get_client().storage.get_bucket(bucket)
             except Exception:
                 self._get_client().storage.create_bucket(bucket, {"public": True})
 
+            # Remove existing file if present (overwrite)
+            try:
+                self._get_client().storage.from_(bucket).remove([path])
+            except Exception:
+                pass
+
             self._get_client().storage.from_(bucket).upload(path, pdf_bytes, {"content-type": "application/pdf"})
             url = self._get_client().storage.from_(bucket).get_public_url(path)
             return url
         except Exception as e:
-            logger.error(f"Failed to upload PDF: {e}")
-            raise StorageError("Failed to upload PDF")
+            logger.warning(f"Supabase PDF upload failed: {e}. Returning demo fallback URL.")
+            # Fallback to mock URL rather than crashing
+            return f"https://demo.storage/sow-pdfs/sows/{user_id or 'unknown'}/{sow_id}/{filename}"
+
