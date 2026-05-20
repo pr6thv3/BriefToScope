@@ -1,0 +1,89 @@
+{
+  "industry": "SEO",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Technical website SEO audit",
+    "Keyword research and mapping sheet",
+    "On-page tags optimization sheet",
+    "Competitor rankings assessment report",
+    "Monthly search console reporting dashboard"
+  ],
+  "common_out_of_scope_items": [
+    "Developer programming to implement technical edits",
+    "Purchasing backlinks or directory listings",
+    "Copywriting blog articles",
+    "Guarantees of page one ranking status",
+    "Managing Google Ad account spending"
+  ],
+  "revision_policy": "Includes one round of adjustments for each monthly keyword strategy sheet.",
+  "payment_schedule_options": [
+    {
+      "label": "Monthly SEO retainer",
+      "milestones": [
+        { "percentage": "100%", "condition": "Due recurringly on the 1st of each service month" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Developer execution backlog stalls ranking",
+      "trigger_terms": ["developer", "cms access", "site updates", "implementation delay"],
+      "recommended_fix": "State that ranking changes depend on the client developer implementing technical recommendations within 14 days."
+    },
+    {
+      "risk": "Search algorithm update alters ranking",
+      "trigger_terms": ["algorithm update", "google update", "indexing change"],
+      "recommended_fix": "Add standard search disclaimer explaining that indexing shifts are determined by search engines."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide Google Search Console access permissions",
+    "Direct client developer resources to implement audit suggestions",
+    "Share target business product priorities monthly"
+  ],
+  "timeline_assumptions": [
+    "Technical recommendations audits are completed by week 3 of kickoff.",
+    "Client developers deploy code within 10 days of audit delivery."
+  ],
+  "acceptance_criteria": [
+    "Technical SEO audits are delivered.",
+    "Target keyword mapping sheets are approved.",
+    "Access configuration parameters are verified."
+  ],
+  "clause_library": {
+    "revision": [
+      "Subsequent keyword strategy adjustments outside the monthly audit schedule require change requests."
+    ],
+    "payment": [
+      "All services are billed at the beginning of each monthly cycle, and work stops if billing is delayed by 5 days."
+    ],
+    "out_of_scope": [
+      "Copywriting services for creating new landing page content must be scoped under separate SOW additions."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for managing developer resources and ensuring recommendations are implemented accurately."
+    ],
+    "ip_ownership": [
+      "Keyword datasets and analysis reports become client property upon receipt of monthly retainer payment."
+    ],
+    "change_request": [
+      "Requests to add additional tracking domains require a proportional retainer upgrade."
+    ],
+    "timeline": [
+      "Ranking timelines assume technical changes are deployed within the agreed timelines."
+    ]
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "industry": "App Development",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "System architecture and database design",
+    "API integration and endpoints engineering",
+    "User interface front-end coding",
+    "Admin control panel dashboard",
+    "User Acceptance Testing (UAT) deployment",
+    "Production server launch and handover"
+  ],
+  "common_out_of_scope_items": [
+    "App store developer registration fees",
+    "Third-party SMS/email API gateway usage pricing",
+    "Refactoring legacy external systems",
+    "Subsequent major operating system upgrades",
+    "Data entry of client product catalogs"
+  ],
+  "revision_policy": "Includes up to two rounds of bug fixing during the designated 14-day User Acceptance Testing (UAT) window.",
+  "payment_schedule_options": [
+    {
+      "label": "Sprint Milestones 30/40/30",
+      "milestones": [
+        { "percentage": "30%", "condition": "Due before technical architecture setup" },
+        { "percentage": "40%", "condition": "Due upon staging release alpha launch" },
+        { "percentage": "30%", "condition": "Due prior to production server deployment" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Legacy API dependency is unstable",
+      "trigger_terms": ["legacy api", "external database", "third-party integrations"],
+      "recommended_fix": "Specify a mock API implementation path if the legacy API is down for over 48 hours."
+    },
+    {
+      "risk": "Feature scope creep mid-sprint",
+      "trigger_terms": ["sprint adjustment", "scope changes", "extra feature"],
+      "recommended_fix": "Any changes to agreed specifications will be queued for post-launch sprint updates."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide API endpoint documentation and access keys",
+    "Assign a technical contact for integration queries",
+    "Execute UAT test cases within 7 business days of release"
+  ],
+  "timeline_assumptions": [
+    "Integration credentials are provided within 5 days of kickoff.",
+    "UAT feedback is returned as a single unified ticket list."
+  ],
+  "acceptance_criteria": [
+    "Application compiles and runs without crashes.",
+    "APIs return correct mock data structures.",
+    "Staging release matches approved UI visual layouts."
+  ],
+  "clause_library": {
+    "revision": [
+      "Feature additions requested during UAT that deviate from the specification are treated as Change Requests."
+    ],
+    "payment": [
+      "Staging release approval must be signed off, and balances cleared, before codebase keys are handed over."
+    ],
+    "out_of_scope": [
+      "Ongoing app maintenance and database hosting costs are out of scope unless covered under a separate SLA."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for maintaining all external platform subscriptions and billing configurations."
+    ],
+    "ip_ownership": [
+      "Ownership of custom-developed codebase transfers to the client upon full payment clearance."
+    ],
+    "change_request": [
+      "Approved change requests will be billed at $175/hr and may impact the project delivery date."
+    ],
+    "timeline": [
+      "Delays in resolving integration credential errors will automatically push subsequent milestones."
+    ]
+  }
+}

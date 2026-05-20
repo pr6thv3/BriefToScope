@@ -1,6 +1,5 @@
 import os
 import tempfile
-from playwright.async_api import async_playwright
 from app.services.storage_service import StorageService
 from app.utils.logger import get_logger
 from app.utils.errors import StorageError
@@ -103,6 +102,8 @@ p, li { font-size: 14px; line-height: 1.6; }
             industry=industry,
         )
         try:
+            from playwright.async_api import async_playwright
+
             async with async_playwright() as p:
                 browser = await p.chromium.launch()
                 page = await browser.new_page()

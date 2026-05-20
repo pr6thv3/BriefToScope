@@ -146,6 +146,19 @@ class TranscriptCleaner:
             logger.info("[A1] DEMO_MODE: returning rich mock A1 output")
             return self._apply_overrides(MOCK_A1_OUTPUT, validated_input)
 
+        if not self.llm.settings.openai_api_key and not self.llm.settings.anthropic_api_key:
+            logger.warning("[A1] No provider keys configured. Returning fallback A1 output.")
+            parsed = self._fallback_output(validated_input)
+            result = self._apply_overrides(parsed, validated_input)
+            logger.info(
+                f"[A1] Transcript cleaning COMPLETED: "
+                f"client={result.client_name}, "
+                f"deliverables={len(result.mentioned_deliverables)}, "
+                f"unclear={len(result.unclear_items)}, "
+                f"risks={len(result.potential_risks)}"
+            )
+            return result
+
         # Build prompt
         user_prompt = self._build_prompt(validated_input)
 
@@ -227,15 +240,15 @@ class TranscriptCleaner:
             cleaned_summary=text[:500] + ("..." if len(text) > 500 else ""),
             goals=[],
             mentioned_deliverables=[],
-            budget_mentions=[] if not budget_hints else ["Budget discussed (extract failed — manual review needed)"],
-            deadline_mentions=[] if not timeline_hints else ["Timeline discussed (extract failed — manual review needed)"],
+            budget_mentions=[] if not budget_hints else ["Budget discussed (extract failed - manual review needed)"],
+            deadline_mentions=[] if not timeline_hints else ["Timeline discussed (extract failed - manual review needed)"],
             stakeholders=[],
             client_responsibilities=[],
             agency_responsibilities=[],
             dependencies=[],
             tools_or_platforms=[],
             confirmed_items=[],
-            unclear_items=["Full extraction failed due to LLM error — review transcript manually"],
+            unclear_items=["Extract failed due to LLM error - review transcript manually"],
             potential_risks=["Could not automatically assess risks from transcript"],
             raw_signals=RawSignals(
                 pricing_discussed=bool(budget_hints),

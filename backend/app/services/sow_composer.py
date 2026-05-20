@@ -209,9 +209,25 @@ class SOWComposer:
         def _dump(obj: Any) -> str:
             return json.dumps(obj.model_dump() if hasattr(obj, "model_dump") else dict(obj), indent=2, default=str)
 
+        template_context_str = ""
+        if industry:
+            try:
+                from app.services.ai_data_service import AIDataService
+                ai_data = AIDataService()
+                template = ai_data.get_industry_template(industry)
+                template_context_str = (
+                    f"\nUse the following industry-specific template context to guide the sections layout and formatting:\n"
+                    f"Default Sections Order: {json.dumps(template.default_sections)}\n"
+                    f"Acceptance Criteria Examples: {json.dumps(template.acceptance_criteria)}\n"
+                    f"Timeline Assumptions Examples: {json.dumps(template.timeline_assumptions)}\n"
+                )
+            except Exception as e:
+                logger.warning(f"[A6] Failed to load template context for prompt enrichment: {e}")
+
         return (
             f"Industry: {industry}\n"
             f"Tone: {tone}\n\n"
+            f"{template_context_str}\n"
             f"A1 Transcript Cleaner output:\n{_dump(a1)}\n\n"
             f"A2 Brief Extractor output:\n{_dump(a2)}\n\n"
             f"A3 Scope Builder output:\n{_dump(a3)}\n\n"

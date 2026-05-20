@@ -175,9 +175,29 @@ class ClauseGenerator:
         a2_json = json.dumps(a2.model_dump() if hasattr(a2, "model_dump") else dict(a2), indent=2, default=str)
         a3_json = json.dumps(a3.model_dump() if hasattr(a3, "model_dump") else dict(a3), indent=2, default=str)
         a4_json = json.dumps(a4.model_dump() if hasattr(a4, "model_dump") else dict(a4), indent=2, default=str)
+        
+        clause_library_str = ""
+        if industry:
+            try:
+                from app.services.ai_data_service import AIDataService
+                ai_data = AIDataService()
+                clauses = ai_data.get_clause_library(industry)
+                clause_library_str = (
+                    f"\nUse the following industry-specific clauses from our pre-approved Clause Library as references/starters:\n"
+                    f"Revision Clauses: {json.dumps(clauses.revision)}\n"
+                    f"Payment Clauses: {json.dumps(clauses.payment)}\n"
+                    f"Out of Scope Clauses: {json.dumps(clauses.out_of_scope)}\n"
+                    f"IP Ownership Clauses: {json.dumps(clauses.ip_ownership)}\n"
+                    f"Change Request Clauses: {json.dumps(clauses.change_request)}\n"
+                    f"Timeline Clauses: {json.dumps(clauses.timeline)}\n"
+                )
+            except Exception as e:
+                logger.warning(f"[A5] Failed to load clause library context for prompt enrichment: {e}")
+                
         return (
             f"Industry: {industry}\n"
             f"Tone: {tone}\n\n"
+            f"{clause_library_str}\n"
             f"A1 Transcript Cleaner output:\n{a1_json}\n\n"
             f"A2 Brief Extractor output:\n{a2_json}\n\n"
             f"A3 Scope Builder output:\n{a3_json}\n\n"

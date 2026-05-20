@@ -333,6 +333,14 @@ class RiskDetector:
         ]
         if inp.industry:
             parts.append(f"\nIndustry context: {inp.industry}")
+            try:
+                from app.services.ai_data_service import AIDataService
+                ai_data = AIDataService()
+                risk_rules = ai_data.get_risk_rules(inp.industry)
+                parts.append("\nStandard Industry Risk Evaluation Rules:")
+                parts.append(json.dumps([r.model_dump() for r in risk_rules]))
+            except Exception as e:
+                logger.warning(f"[A4] Failed to load risk rules for prompt enrichment: {e}")
         if inp.tone:
             parts.append(f"Tone target: {inp.tone}")
         return "\n".join(parts)

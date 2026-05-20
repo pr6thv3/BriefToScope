@@ -61,14 +61,14 @@ class StorageService:
             logger.error(f"Failed to create user: {e}")
             raise StorageError("Failed to create user")
 
-    async def create_project(self, user_id: str, client_name: str, project_name: str, industry: str) -> dict:
+    async def create_project(self, user_id: str, client_name: str, project_name: str, industry: str, status: str = "active") -> dict:
         data = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
             "client_name": client_name,
             "project_name": project_name,
             "industry": industry,
-            "status": "active",
+            "status": status,
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
         }
@@ -81,6 +81,22 @@ class StorageService:
         except Exception as e:
             logger.error(f"Failed to create project: {e}")
             raise StorageError("Failed to create project")
+
+    async def update_project_status(self, project_id: str, status: str) -> dict:
+        if self._demo:
+            p = _demo_projects.get(project_id)
+            if p:
+                p["status"] = status
+                p["updated_at"] = datetime.utcnow().isoformat()
+                return p
+            raise StorageError("Project not found")
+        try:
+            data = {"status": status, "updated_at": datetime.utcnow().isoformat()}
+            resp = self._get_client().table("projects").update(data).eq("id", project_id).execute()
+            return resp.data[0] if resp.data else {}
+        except Exception as e:
+            logger.error(f"Failed to update project status: {e}")
+            raise StorageError("Failed to update project status")
 
     async def create_transcript(self, project_id: str, raw_text: str, cleaned_text: str, metadata: dict) -> dict:
         data = {

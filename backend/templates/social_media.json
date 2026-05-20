@@ -1,0 +1,88 @@
+{
+  "industry": "Social Media",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Social media channel strategy setup",
+    "Monthly content calendar structure",
+    "Visual graphic assets and copy drafts",
+    "Hashtag and tags research mapping",
+    "Monthly engagement and analytics report"
+  ],
+  "common_out_of_scope_items": [
+    "Responding directly to DM support messages",
+    "Paid social media ad account operations",
+    "Organizing on-site photo shoots",
+    "Restoring banned platform accounts"
+  ],
+  "revision_policy": "Includes one round of adjustments for each monthly content calendar.",
+  "payment_schedule_options": [
+    {
+      "label": "Monthly Retainer Billing",
+      "milestones": [
+        { "percentage": "100%", "condition": "Due monthly in advance on the 1st of each service month" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Late client asset delivery pauses feed",
+      "trigger_terms": ["images", "assets", "product photos", "late delivery"],
+      "recommended_fix": "Add clause that post calendar will repeat evergreen posts if assets are not received 5 days before scheduled date."
+    },
+    {
+      "risk": "Platform guideline changes affect visibility",
+      "trigger_terms": ["guidelines", "banned terms", "algorithm change"],
+      "recommended_fix": "State that algorithm changes are out of agency control and reports will focus on direct engagement metrics."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide product and brand media assets",
+    "Review and approve draft calendars within review windows",
+    "Provide credentials to scheduling platforms safely"
+  ],
+  "timeline_assumptions": [
+    "Post calendars are submitted for review by the 20th of the preceding month.",
+    "Approvals are granted within 3 working days of submission."
+  ],
+  "acceptance_criteria": [
+    "Monthly post calendar is fully approved.",
+    "Graphics and copy align with brand guidelines.",
+    "Monthly analytics report is delivered."
+  ],
+  "clause_library": {
+    "revision": [
+      "Edits to scheduled posts after approval and scheduling must be requested at least 24 hours prior to post times."
+    ],
+    "payment": [
+      "Campaign execution will pause if monthly retainer invoices remain unpaid for more than 5 days."
+    ],
+    "out_of_scope": [
+      "Managing additional channels (e.g. YouTube, newsletters) is outside the scope of this retainer."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for providing all legal credentials and assets necessary to execute posting calendars."
+    ],
+    "ip_ownership": [
+      "Final visual assets belong to the client, while analytical strategy templates remain the property of the agency."
+    ],
+    "change_request": [
+      "Requests to add additional emergency posts outside the monthly calendar scope will require separate fees."
+    ],
+    "timeline": [
+      "Posting schedules may shift temporarily to align with platform outages or major industry events."
+    ]
+  }
+}

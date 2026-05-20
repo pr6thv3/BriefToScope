@@ -336,6 +336,15 @@ class ScopeBuilder:
         ]
         if inp.industry:
             parts.append(f"\nIndustry context: {inp.industry}")
+            try:
+                from app.services.ai_data_service import AIDataService
+                ai_data = AIDataService()
+                template = ai_data.get_industry_template(inp.industry)
+                parts.append("\nStandard Industry Scope Recommendations:")
+                parts.append(f"Standard Deliverables: {json.dumps(template.standard_deliverables)}")
+                parts.append(f"Common Out-of-Scope Items (Exclusions): {json.dumps(template.common_out_of_scope_items)}")
+            except Exception as e:
+                logger.warning(f"[A3] Failed to load template context for prompt enrichment: {e}")
         if inp.tone:
             parts.append(f"Tone target: {inp.tone}")
         return "\n".join(parts)
