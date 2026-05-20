@@ -1,0 +1,88 @@
+{
+  "industry": "Consulting",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Discovery workshops and analysis sheets",
+    "Competitor evaluation framework",
+    "Operations recommendations workbook",
+    "Final strategic advisory deck"
+  ],
+  "common_out_of_scope_items": [
+    "Direct execution or staffing of operations",
+    "Providing legal or accounting compliance advice",
+    "Software configuration and license purchases",
+    "Recruitment vetting and interviews"
+  ],
+  "revision_policy": "Includes one round of revision adjustments to the final strategy deck.",
+  "payment_schedule_options": [
+    {
+      "label": "50/50 Engagement Milestones",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due upon execution of agreement" },
+        { "percentage": "50%", "condition": "Due upon delivery of final deck" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Stakeholder meeting cancellations",
+      "trigger_terms": ["meeting cancellation", "reschedule", "availability"],
+      "recommended_fix": "Add clause that meetings cancelled with less than 24 hours notice count against consulting hour limits."
+    },
+    {
+      "risk": "Scope expansion of data queries",
+      "trigger_terms": ["extra audit", "more data", "unplanned queries"],
+      "recommended_fix": "Specify a cap on data analysis items included in the primary audit."
+    }
+  ],
+  "client_responsibilities": [
+    "Coordinate calendar invites for key team stakeholders",
+    "Provide access to internal business analytics data",
+    "Provide timely review feedback on strategy directions"
+  ],
+  "timeline_assumptions": [
+    "Advisory sessions occur weekly as scheduled.",
+    "Client team responds to questionnaires within 3 working days."
+  ],
+  "acceptance_criteria": [
+    "Discovery workshops are completed.",
+    "Strategic analysis documents are finalized.",
+    "Final advisory presentation is delivered."
+  ],
+  "clause_library": {
+    "revision": [
+      "Subsequent revisions to recommendations after deck approval are billed as separate advisory hours."
+    ],
+    "payment": [
+      "Invoices are payable within 7 days of milestone completions, before subsequent phases start."
+    ],
+    "out_of_scope": [
+      "Any ongoing training or execution oversight requires a separate consulting retainer agreement."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for verifying internal data accuracy before analysis sessions."
+    ],
+    "ip_ownership": [
+      "Methodology frameworks remain agency property, while custom insights transfer to client on payment."
+    ],
+    "change_request": [
+      "Requests to add additional team interviews require a proportional scope adjustment fee."
+    ],
+    "timeline": [
+      "Project timelines depend on timely client feedback, approvals, and asset delivery."
+    ]
+  }
+}

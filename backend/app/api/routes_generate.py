@@ -1,11 +1,12 @@
+import time
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_current_user
-from app.models.schemas import GenerateSOWRequest, GenerateSOWResponse, HealthResponse
+from app.models.api_schemas import GenerateSOWRequest, GenerateSOWResponse, SowDetails, QualityDetails, GenerationMetadata
+from app.models.schemas import HealthResponse
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.storage_service import StorageService
 from app.services.usage_service import UsageService
 from app.services.auth_service import AuthService
-from app.services.demo_data import SAMPLE_TRANSCRIPT
 from app.utils.security import sanitize_transcript, validate_transcript_length
 from app.utils.errors import BriefToScopeError
 from app.utils.logger import get_logger
@@ -24,9 +25,12 @@ async def generate_sow(
     req: GenerateSOWRequest,
     current_user: dict = Depends(get_current_user),
 ):
+    start_time = time.perf_counter()
     orchestrator = None
+    storage = StorageService()
+
     try:
-        # Validate
+        # 1. Validate
         raw = sanitize_transcript(req.transcript_text)
         err = validate_transcript_length(raw)
         if err:
@@ -34,7 +38,7 @@ async def generate_sow(
 
         logger.info(f"[GENERATE] Request from user={current_user.get('sub')} industry={req.industry} tone={req.tone}")
 
-        # Get or create user
+        # 2. Get or create user
         auth_service = AuthService()
         user = await auth_service.get_or_create_user(
             current_user["sub"], current_user.get("email", ""), ""
@@ -42,7 +46,36 @@ async def generate_sow(
         user_id = user["id"]
         logger.info(f"[GENERATE] User resolved: {user_id}")
 
-        # AI pipeline
+        # 3. Create project with status = 'generating'
+        project = await storage.create_project(
+            user_id=user_id,
+            client_name=req.client_name or "Unknown Client",
+            project_name=req.project_name or "Untitled Project",
+            industry=req.industry,
+            status="generating",
+        )
+        project_id = project["id"]
+        logger.info(f"[GENERATE] Project created: {project_id} (generating)")
+
+        # 4. Create transcript row (cleaning status stored in metadata since table has no status column)
+        transcript = await storage.create_transcript(
+            project_id=project_id,
+            raw_text=raw,
+            cleaned_text=raw[:5000],
+            metadata={"tone": req.tone, "status": "cleaning"},
+        )
+        transcript_id = transcript["id"]
+        logger.info(f"[GENERATE] Transcript created: {transcript_id}")
+
+        # Define inline callback to update DB status during execution
+        async def db_status_callback(status: str):
+            try:
+                await storage.update_project_status(project_id, status)
+                logger.info(f"[GENERATE] Updated project {project_id} status to '{status}'")
+            except Exception as e:
+                logger.error(f"[GENERATE] Failed to update project status in DB: {e}")
+
+        # 5. Run AI pipeline
         orchestrator = AIOrchestrator()
         output = await orchestrator.generate_sow(
             transcript_text=raw,
@@ -52,62 +85,111 @@ async def generate_sow(
             project_name=req.project_name,
             budget=req.budget,
             timeline=req.timeline,
+            user_id=user_id,
+            project_id=project_id,
+            status_callback=db_status_callback,
         )
         logger.info(f"[GENERATE] AI pipeline complete: confidence={output.confidence_score:.2f} risks={len(output.risk_flags)}")
 
-        # Save to database
-        storage = StorageService()
-        project = await storage.create_project(
+        # 6. Create SOW row (status = 'draft')
+        sow_title = req.project_name or output.extracted_brief.project_type or "Untitled SOW"
+        markdown_content = _to_markdown(output.sow, output.extracted_brief.client_name or req.client_name)
+        
+        sow_record = await storage.create_sow(
+            project_id=project_id,
             user_id=user_id,
-            client_name=req.client_name or output.extracted_brief.client_name or "Unknown Client",
-            project_name=req.project_name or output.extracted_brief.project_type or "Untitled Project",
-            industry=req.industry,
-        )
-        logger.info(f"[GENERATE] Project created: {project['id']}")
-
-        transcript = await storage.create_transcript(
-            project_id=project["id"],
-            raw_text=raw,
-            cleaned_text=raw[:5000],
-            metadata={"tone": req.tone},
-        )
-        logger.info(f"[GENERATE] Transcript saved: {transcript['id']}")
-
-        sow = await storage.create_sow(
-            project_id=project["id"],
-            user_id=user_id,
-            title=req.project_name or output.extracted_brief.project_type or "Untitled SOW",
+            title=sow_title,
             content_json=output.sow.model_dump(),
-            content_markdown=_to_markdown(output.sow, output.extracted_brief.client_name),
+            content_markdown=markdown_content,
             risk_flags=[r.model_dump() for r in output.risk_flags],
             confidence_score=output.confidence_score,
         )
-        logger.info(f"[GENERATE] SOW saved: {sow['id']}")
+        sow_id = sow_record["id"]
+        logger.info(f"[GENERATE] SOW saved: {sow_id}")
 
-        # Track usage
+        # 7. Update project status: 'completed'
+        await storage.update_project_status(project_id, "completed")
+        logger.info(f"[GENERATE] Project status finalized: completed")
+
+        # 8. Track usage event
         usage = UsageService()
         await usage.track_event(user_id, "sow_generated", token_count=len(raw.split()))
 
+        # Map sections for response
+        sow_sections = []
+        if orchestrator.state.a6_sow and orchestrator.state.a6_sow.sections:
+            for s in orchestrator.state.a6_sow.sections:
+                sow_sections.append({
+                    "key": s.section_key,
+                    "title": s.section_title,
+                    "content": s.content_markdown,
+                    "order": s.order
+                })
+
+        # Map pipeline steps
+        ai_pipeline = {
+            "a1_transcript_cleaner": orchestrator.state.steps.get("a1", {}),
+            "a2_brief_extractor": orchestrator.state.steps.get("a2", {}),
+            "a3_scope_builder": orchestrator.state.steps.get("a3", {}),
+            "a4_risk_detector": orchestrator.state.steps.get("a4", {}),
+            "a5_clause_generator": orchestrator.state.steps.get("a5", {}),
+            "a6_sow_composer": orchestrator.state.steps.get("a6", {}),
+            "a7_quality_checker": orchestrator.state.steps.get("a7", {})
+        }
+
+        # Calculate final metadata timing
+        total_time_ms = int((time.perf_counter() - start_time) * 1000)
+
+        # Build response
         return GenerateSOWResponse(
-            sow=output.sow,
-            risk_flags=output.risk_flags,
-            extracted_brief=output.extracted_brief,
+            success=True,
+            project_id=project_id,
+            transcript_id=transcript_id,
+            sow_id=sow_id,
+            status="generated",
+            ai_pipeline=ai_pipeline,
+            sow=SowDetails(
+                title=sow_title,
+                content_json=output.sow.model_dump(),
+                content_markdown=markdown_content,
+                sections=sow_sections
+            ),
+            extracted_brief=output.extracted_brief.model_dump(),
             confidence_score=output.confidence_score,
-            sow_id=sow["id"],
+            risk_flags=[r.model_dump() for r in output.risk_flags],
+            quality=QualityDetails(
+                overall_quality_score=int(orchestrator.state.a7_quality.overall_quality_score) if orchestrator.state.a7_quality else 70,
+                approval_status=orchestrator.state.a7_quality.approval_status if orchestrator.state.a7_quality else "approved_with_warnings",
+                ready_for_export=orchestrator.state.a7_quality.ready_for_export if orchestrator.state.a7_quality else True,
+                warnings=orchestrator.state.a7_quality.suggestions if (orchestrator.state.a7_quality and hasattr(orchestrator.state.a7_quality, "suggestions")) else []
+            ),
+            metadata=GenerationMetadata(
+                generation_time_ms=total_time_ms,
+                demo_mode=storage._demo,
+                model_used="gpt-4o-mini",
+                fallback_used=orchestrator.state.fallback_used
+            )
         )
+
     except BriefToScopeError as e:
-        logger.warning(f"[GENERATE] Validation/auth error: {e.message}")
+        logger.warning(f"[GENERATE] Validation error: {e.message}")
         raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:
         logger.error(f"[GENERATE] UNEXPECTED ERROR: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate SOW. Please try again or contact support.")
+        # Attempt to mark project failed if we created it
+        if project_id:
+            try:
+                await storage.update_project_status(project_id, "failed")
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         if orchestrator:
             await orchestrator.close()
 
 
 def _to_markdown(sow, client_name: str) -> str:
-    lines = ["# Statement of Work", f"**Client:** {client_name}", ""]
+    lines = ["# Statement of Work", f"**Client:** {client_name or 'Valued Client'}", ""]
     lines.append(f"## Project Overview\n{sow.project_overview}\n")
     lines.append("## Objectives")
     for o in sow.objectives:

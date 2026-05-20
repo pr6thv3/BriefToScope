@@ -14,7 +14,6 @@ working_dir
 dist
 dist-ssr
 *.local
-package-lock.json
 
 # Editor directories and files
 .vscode/*
@@ -43,6 +42,19 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Lock files (keep frontend lock)
+package-lock.json
+!frontend/package-lock.json
 
 # Project specific
 historical_context.txt

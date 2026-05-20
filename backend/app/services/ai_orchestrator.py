@@ -16,6 +16,9 @@ Design:
 - Intermediate outputs are stored in PipelineState (no DB logic here).
 """
 
+import time
+import uuid
+from datetime import datetime
 from typing import Optional
 from app.services.llm_client import LLMClient
 from app.services.transcript_cleaner import TranscriptCleaner
@@ -67,18 +70,40 @@ class AIOrchestrator:
         project_name: str,
         budget: str,
         timeline: str,
+        user_id: str = "",
+        project_id: str = "",
+        status_callback = None,
     ) -> SOWOutput:
         logger.info("[PIPELINE] === Starting AI Pipeline ===")
         self.state = PipelineState()
+        self.state.request_id = str(uuid.uuid4())
+        self.state.user_id = user_id
+        self.state.project_id = project_id
+        self.state.started_at = datetime.utcnow().isoformat()
+        self.state.steps = {}
+        self.state.errors = []
+        self.state.fallback_used = False
 
         # ── A1 ──────────────────────────────────────
+        if status_callback:
+            await status_callback("cleaning")
+        t0 = time.perf_counter()
         a1 = await self._run_a1(transcript_text, industry, tone, client_name, project_name)
+        d1 = int((time.perf_counter() - t0) * 1000)
         self.state.a1_cleaned = a1
+        self.state.steps["a1"] = {
+            "status": "fallback" if any("fallback" in err.lower() for err in self.state.errors) or (hasattr(a1, "unclear_items") and a1.unclear_items and "A1 extraction failed" in a1.unclear_items[0]) else "success",
+            "output": a1.model_dump(),
+            "duration_ms": d1
+        }
 
         # ── A2 ──────────────────────────────────────
+        if status_callback:
+            await status_callback("extracting")
+        t0 = time.perf_counter()
         a2 = await self._run_a2(a1, industry, tone)
-        self.state.a2_brief = a2
-
+        d2 = int((time.perf_counter() - t0) * 1000)
+        
         # Apply user overrides from the form into the brief
         if budget and budget not in a2.budget.budget_details:
             a2.budget.budget_details.append(budget)
@@ -87,25 +112,73 @@ class AIOrchestrator:
             a2.timeline.mentioned_deadlines.append(timeline)
             a2.timeline.timeline_confidence = "medium"
 
+        self.state.a2_brief = a2
+        self.state.steps["a2"] = {
+            "status": "fallback" if any("a2" in err.lower() for err in self.state.errors) else "success",
+            "output": a2.model_dump(),
+            "duration_ms": d2
+        }
+
         # ── A3 ──────────────────────────────────────
+        if status_callback:
+            await status_callback("building_scope")
+        t0 = time.perf_counter()
         a3 = await self._run_a3(a2, industry, tone)
+        d3 = int((time.perf_counter() - t0) * 1000)
         self.state.a3_scope = a3
+        self.state.steps["a3"] = {
+            "status": "fallback" if any("a3" in err.lower() for err in self.state.errors) else "success",
+            "output": a3.model_dump(),
+            "duration_ms": d3
+        }
 
         # ── A4 ──────────────────────────────────────
+        if status_callback:
+            await status_callback("detecting_risks")
+        t0 = time.perf_counter()
         a4 = await self._run_a4(a1, a2, a3, industry, tone)
+        d4 = int((time.perf_counter() - t0) * 1000)
         self.state.a4_risks = a4
+        self.state.steps["a4"] = {
+            "status": "fallback" if any("a4" in err.lower() for err in self.state.errors) else "success",
+            "output": a4.model_dump(),
+            "duration_ms": d4
+        }
 
         # ── A5 ──────────────────────────────────────
+        t0 = time.perf_counter()
         a5 = await self._run_a5(a1, a2, a3, a4, industry, tone)
+        d5 = int((time.perf_counter() - t0) * 1000)
         self.state.a5_clauses = a5
+        self.state.steps["a5"] = {
+            "status": "fallback" if any("a5" in err.lower() for err in self.state.errors) else "success",
+            "output": a5.model_dump(),
+            "duration_ms": d5
+        }
 
         # ── A6 ──────────────────────────────────────
+        t0 = time.perf_counter()
         a6 = await self._run_a6(a1, a2, a3, a4, a5, industry, tone)
+        d6 = int((time.perf_counter() - t0) * 1000)
         self.state.a6_sow = a6
+        self.state.steps["a6"] = {
+            "status": "fallback" if any("a6" in err.lower() for err in self.state.errors) else "success",
+            "output": a6.model_dump(),
+            "duration_ms": d6
+        }
 
         # ── A7 ──────────────────────────────────────
+        t0 = time.perf_counter()
         a7 = await self._run_a7(a1, a2, a3, a4, a5, a6, industry, tone)
+        d7 = int((time.perf_counter() - t0) * 1000)
         self.state.a7_quality = a7
+        self.state.steps["a7"] = {
+            "status": "fallback" if any("a7" in err.lower() for err in self.state.errors) else "success",
+            "output": a7.model_dump(),
+            "duration_ms": d7
+        }
+
+        self.state.completed_at = datetime.utcnow().isoformat()
 
         blocking = sum(1 for r in a4.scope_creep_risks if r.blocking_risk)
         warnings = sum(1 for s in a7.section_reviews if s.status == "warning")
@@ -155,6 +228,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A1 — FAILED: {e}, using fallback")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A1 failed: {str(e)}")
             return A1Output(
                 client_name=client_name,
                 project_name=project_name,
@@ -174,6 +249,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A2 — FAILED: {e}, using fallback brief")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A2 failed: {str(e)}")
             return BriefExtractorOutput.model_validate(get_fallback_brief())
 
     async def _run_a3(self, a2: BriefExtractorOutput, industry: str, tone: str) -> A3Output:
@@ -189,6 +266,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A3 — FAILED: {e}, using fallback scope")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A3 failed: {str(e)}")
             fallback = get_fallback_sow()
             return A3Output(
                 scope_of_work=fallback["scope_of_work"],
@@ -216,6 +295,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A4 — FAILED: {e}, using fallback risks")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A4 failed: {str(e)}")
             fallback_risks = get_fallback_risks()
             return A4Output(
                 overall_risk_score=50,
@@ -242,6 +323,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A5 — FAILED: {e}, using fallback clauses")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A5 failed: {str(e)}")
             return ClauseGeneratorOutput(
                 revision_policy=RevisionPolicy(summary="Fallback revision policy", clauses=["Two rounds of revisions included"], limits_defined=True),
                 payment_schedule=PaymentSchedule(
@@ -267,6 +350,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A6 — FAILED: {e}, using fallback SOW")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A6 failed: {str(e)}")
             fallback = get_fallback_sow()
             return SOWComposerOutput(
                 document_title="Statement of Work",
@@ -292,6 +377,8 @@ class AIOrchestrator:
             return result
         except Exception as e:
             logger.warning(f"[PIPELINE] A7 — FAILED: {e}, using default quality")
+            self.state.fallback_used = True
+            self.state.errors.append(f"A7 failed: {str(e)}")
             return QualityCheckerOutput(
                 overall_quality_score=70,
                 approval_status="approved_with_warnings",

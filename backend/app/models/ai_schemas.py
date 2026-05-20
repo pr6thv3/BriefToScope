@@ -523,3 +523,12 @@ class PipelineState(BaseModel):
     a5_clauses: Optional[A5Output] = None
     a6_sow: Optional[A6Output] = None
     a7_quality: Optional[A7Output] = None
+    
+    request_id: str = ""
+    project_id: str = ""
+    user_id: str = ""
+    started_at: str = ""
+    completed_at: str = ""
+    steps: dict = {}
+    fallback_used: bool = False
+    errors: list = []

@@ -197,9 +197,22 @@ class BriefExtractor:
     def __init__(self, llm: LLMClient):
         self.llm = llm
 
-    async def extract(self, a1_output: A1Output, industry: str = "", tone: str = "") -> BriefExtractorOutput:
+    async def extract(self, a1_output: A1Output | str, industry: str = "", tone: str = "") -> BriefExtractorOutput | dict:
         """Run the A2 brief extraction step with retry logic."""
         logger.info("[A2] Brief extraction STARTED")
+
+        if isinstance(a1_output, str):
+            logger.info("[A2] Legacy string input received. Returning compatibility brief dict.")
+            return {
+                "client_name": "",
+                "project_type": "",
+                "goals": [],
+                "deliverables": [],
+                "budget_mentions": [],
+                "deadline_mentions": [],
+                "unclear_items": ["Structured A1 output is required for full brief extraction"],
+                "cleaned_summary": a1_output,
+            }
 
         # Validate input
         try:

@@ -1,0 +1,91 @@
+{
+  "industry": "Ecommerce",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Storefront styling and module configurations",
+    "Product catalog import and categorization (up to 50 items)",
+    "Payment gateway integration (Stripe/Shopify Payments)",
+    "Shipping and tax calculation configurations",
+    "Transactional email notifications styling",
+    "End-to-end checkout testing validation"
+  ],
+  "common_out_of_scope_items": [
+    "Manual data entry of more than 50 product pages",
+    "Setting up merchant accounts on platforms other than Stripe",
+    "Custom inventory ERP synchronization development",
+    "Handling legal business tax filings in foreign regions"
+  ],
+  "revision_policy": "Includes two rounds of styling and category revisions before going live.",
+  "payment_schedule_options": [
+    {
+      "label": "Standard 50/30/20 Setup",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due upon signing SOW" },
+        { "percentage": "30%", "condition": "Due on password-protected staging site release" },
+        { "percentage": "20%", "condition": "Due prior to removing store password" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Merchant account verification delays",
+      "trigger_terms": ["merchant account", "payout verification", "payment gateway"],
+      "recommended_fix": "Client must submit merchant documents within 7 days of kickoff to avoid gateway integration delays."
+    },
+    {
+      "risk": "Inventory CSV data is corrupted",
+      "trigger_terms": ["inventory sheet", "product csv", "import list"],
+      "recommended_fix": "State that product imports assume client-provided spreadsheet follows agreed templates."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide verified business tax IDs and bank details",
+    "Provide product descriptions, price sheets, and image assets",
+    "Configure custom domain DNS redirects"
+  ],
+  "timeline_assumptions": [
+    "Gateway approval parameters are handled at project kickoff.",
+    "Product catalog data is provided in a single CSV file."
+  ],
+  "acceptance_criteria": [
+    "Store pages load properly and adapt to mobile layouts.",
+    "Test transactions are completed successfully.",
+    "Order notification emails are triggered."
+  ],
+  "clause_library": {
+    "revision": [
+      "Layout alterations requested after store structure is approved will require extra estimation fees."
+    ],
+    "payment": [
+      "Store password constraints will be removed only after the final milestone invoice is paid."
+    ],
+    "out_of_scope": [
+      "Ongoing store inventory management or bulk discount code additions require monthly SLAs."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for setting up tax rules and verifying legal compliance."
+    ],
+    "ip_ownership": [
+      "All custom themes and store templates transfer to client ownership upon milestone completion payments."
+    ],
+    "change_request": [
+      "Requests to add additional payment plugins require scope updates at standard hourly design rates."
+    ],
+    "timeline": [
+      "Delays in bank account verifications will pause checkout launch dates."
+    ]
+  }
+}

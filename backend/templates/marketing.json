@@ -1,0 +1,90 @@
+{
+  "industry": "Marketing",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Target audience and market research",
+    "Campaign architecture and setup",
+    "Ad creatives and graphic assets",
+    "Copywriting for ads and landing pages",
+    "Conversion tracking and pixels setup",
+    "Monthly performance dashboard reports"
+  ],
+  "common_out_of_scope_items": [
+    "Direct payment of platform media spend",
+    "Website landing page technical development",
+    "Handling negative public review events",
+    "Attribution tool subscription fees"
+  ],
+  "revision_policy": "Includes two rounds of copy and asset adjustments prior to launch.",
+  "payment_schedule_options": [
+    {
+      "label": "Flat Setup + Monthly Retainer",
+      "milestones": [
+        { "percentage": "100%", "condition": "Campaign setup fee due upfront" },
+        { "percentage": "100%", "condition": "Retainer billed on the 1st of each campaign month" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Ad spend payment delays",
+      "trigger_terms": ["media spend", "ad account billing", "credit card limit"],
+      "recommended_fix": "Add clause that ad campaign stops if platform payment card fails."
+    },
+    {
+      "risk": "Tracking pixel setup blockers",
+      "trigger_terms": ["tracking pixel", "conversions", "tag manager"],
+      "recommended_fix": "Client developers must place code snippets within 5 days of request."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide access to ad accounts and billing setup",
+    "Provide raw media assets and brand guidelines",
+    "Approve ad content before publishing schedules"
+  ],
+  "timeline_assumptions": [
+    "Ad accounts are verified by platforms before launch.",
+    "Required media guidelines are provided at project kickoff."
+  ],
+  "acceptance_criteria": [
+    "Tracking pixels are firing successfully.",
+    "Ad creatives are approved and live.",
+    "First monthly dashboard report is generated."
+  ],
+  "clause_library": {
+    "revision": [
+      "Mid-campaign changes to ad creatives after live publishing are billed as an hourly update order."
+    ],
+    "payment": [
+      "All setup and campaign management costs are billed independently of performance outcomes."
+    ],
+    "out_of_scope": [
+      "Managing additional marketing channels (e.g. SEO, email) requires separate scope addenda."
+    ],
+    "client_responsibilities": [
+      "Client must fund platform accounts directly and resolve any platform credit issues."
+    ],
+    "ip_ownership": [
+      "Campaign strategy data remains agency property, while creatives transfer to client upon payment."
+    ],
+    "change_request": [
+      "Targeting updates and budget adjustments must be submitted in writing at least 72 hours before implementation."
+    ],
+    "timeline": [
+      "Platform compliance review times are out of agency control and may push campaign launches."
+    ]
+  }
+}

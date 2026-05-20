@@ -1,0 +1,95 @@
+{
+  "industry": "Web Design",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Website strategy",
+    "Information architecture",
+    "Responsive page design",
+    "Webflow or CMS development",
+    "Contact form setup",
+    "Basic SEO metadata",
+    "Launch support"
+  ],
+  "common_out_of_scope_items": [
+    "Copywriting",
+    "Photography",
+    "Advanced animations",
+    "Custom backend functionality",
+    "Third-party integrations",
+    "Ongoing maintenance"
+  ],
+  "revision_policy": "Each major design deliverable includes up to two rounds of revisions unless otherwise specified.",
+  "payment_schedule_options": [
+    {
+      "label": "Standard 50/25/25",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due before project kickoff" },
+        { "percentage": "25%", "condition": "Due upon design approval" },
+        { "percentage": "25%", "condition": "Due before final launch or handoff" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Copywriting ownership unclear",
+      "trigger_terms": ["copy", "content", "website text"],
+      "recommended_fix": "Define whether the client or agency provides final copy."
+    },
+    {
+      "risk": "Animations undefined",
+      "trigger_terms": ["animations", "interactions", "motion"],
+      "recommended_fix": "Specify animation complexity and limits."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide final website copy",
+    "Provide images and brand assets",
+    "Provide timely approvals",
+    "Provide domain or hosting access if needed"
+  ],
+  "timeline_assumptions": [
+    "Client feedback is provided within agreed review windows.",
+    "Required content and assets are provided before development begins."
+  ],
+  "acceptance_criteria": [
+    "All approved pages are built and responsive.",
+    "Contact forms are tested.",
+    "Client approves final website preview."
+  ],
+  "clause_library": {
+    "revision": [
+      "Each major deliverable includes up to two rounds of revisions unless otherwise specified."
+    ],
+    "payment": [
+      "Project timelines may pause if invoices remain unpaid beyond the agreed payment period."
+    ],
+    "out_of_scope": [
+      "Work outside the approved scope may require a separate estimate and written approval."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for providing final content, assets, feedback, and approvals required for project delivery."
+    ],
+    "ip_ownership": [
+      "Final approved deliverables become the property of the client upon receipt of full project payment."
+    ],
+    "change_request": [
+      "Additional requests outside the approved scope will be reviewed and may require adjusted pricing and timeline."
+    ],
+    "timeline": [
+      "Project timelines depend on timely client feedback, approvals, and asset delivery."
+    ]
+  }
+}

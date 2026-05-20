@@ -1,0 +1,92 @@
+{
+  "industry": "Video Production",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Concept development and script writing",
+    "Storyboard layout sheets",
+    "Raw shooting session setups",
+    "Rough cut edit assemblies",
+    "Color grading and audio mixing",
+    "Master video file exports"
+  ],
+  "common_out_of_scope_items": [
+    "External studio space rentals",
+    "Talent/actor hiring and payroll costs",
+    "Premium commercial music licenses",
+    "Travel expenses outside agency zone",
+    "Physical distribution setup"
+  ],
+  "revision_policy": "Includes two rounds of post-production edits on the rough cuts.",
+  "payment_schedule_options": [
+    {
+      "label": "50/30/20 Production Milestones",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due upon scheduling the shoot" },
+        { "percentage": "30%", "condition": "Due upon delivery of first rough cut review" },
+        { "percentage": "20%", "condition": "Due prior to delivery of master raw files" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Weather disrupts outdoor shoots",
+      "trigger_terms": ["weather", "outdoor", "location", "rain"],
+      "recommended_fix": "Incorporate a weather contingency backup shoot date in the schedule assumptions."
+    },
+    {
+      "risk": "Music copyright clearance delays",
+      "trigger_terms": ["music license", "copyright", "soundtrack"],
+      "recommended_fix": "Add standard licensing clause stating client covers all royalty fees."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide product details and brand guidelines",
+    "Approve storyboards and script files before shooting",
+    "Secure permission rights for shooting locations"
+  ],
+  "timeline_assumptions": [
+    "Shooting dates are finalized at least 14 days in advance.",
+    "Review comments on rough cuts are submitted within 5 business days."
+  ],
+  "acceptance_criteria": [
+    "Storyboards are finalized and signed off.",
+    "Master video matches approved script directions.",
+    "Final video files meet exporting specs."
+  ],
+  "clause_library": {
+    "revision": [
+      "Re-shoots after storyboard sign-off are billed as separate creative changes, not revision rounds."
+    ],
+    "payment": [
+      "Invoices for shooting milestones must be cleared before camera crews go active on location."
+    ],
+    "out_of_scope": [
+      "Any extra voiceover edits or foreign translation work is scoped separately."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for getting clearance waivers for all employee faces appearing in the video."
+    ],
+    "ip_ownership": [
+      "Full usage rights transfer to client, while raw camera assets remain property of the studio."
+    ],
+    "change_request": [
+      "Changes to shooting dates within 7 days of production trigger a rescheduling fee of 15%."
+    ],
+    "timeline": [
+      "Timeline estimates assume standard weather patterns, and shifts may occur for natural safety factors."
+    ]
+  }
+}

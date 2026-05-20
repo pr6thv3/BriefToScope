@@ -1,0 +1,92 @@
+{
+  "industry": "Branding",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Discovery and visual research",
+    "Moodboards and color palettes",
+    "Primary logo and logo variations",
+    "Typography rules and pairings",
+    "Brand guidelines style book",
+    "Asset formatting for digital use"
+  ],
+  "common_out_of_scope_items": [
+    "Trademark registration or legal filing",
+    "Physical packaging print setup",
+    "Copywriting or brand naming services",
+    "Domain registration",
+    "Custom illustration sets beyond logos"
+  ],
+  "revision_policy": "Includes up to three rounds of visual revisions on the selected direction.",
+  "payment_schedule_options": [
+    {
+      "label": "Standard 50/30/20",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due upon signing SOW" },
+        { "percentage": "30%", "condition": "Due on final concept selection" },
+        { "percentage": "20%", "condition": "Due before release of raw files" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Subjective reviews delay project",
+      "trigger_terms": ["subjective", "taste", "opinion", "style preference"],
+      "recommended_fix": "Incorporate structured visual feedback templates to keep reviews objective."
+    },
+    {
+      "risk": "Naming conflicts or trademark overlap",
+      "trigger_terms": ["trademark", "availability check", "legal name"],
+      "recommended_fix": "Specify that naming is not legally vetted and trademark check is client responsibility."
+    }
+  ],
+  "client_responsibilities": [
+    "Fill out discovery branding questionnaire",
+    "Provide clear feedback during creative reviews",
+    "Handle all trademark validation searches"
+  ],
+  "timeline_assumptions": [
+    "Feedback is gathered from all stakeholders and submitted as a unified list.",
+    "Concept reviews occur within 3 working days of delivery."
+  ],
+  "acceptance_criteria": [
+    "Brand guide style book is finalized.",
+    "Logo vector and rasters are exported and shared.",
+    "Client signs off on brand rules."
+  ],
+  "clause_library": {
+    "revision": [
+      "Revisions are confined to refinements of the selected design direction. Pivot changes require a formal scope adjustment."
+    ],
+    "payment": [
+      "All master branding source files are released only after all project balances are fully settled."
+    ],
+    "out_of_scope": [
+      "Additional visual asset requests will be scoped separately at a standard rate of $150/hr."
+    ],
+    "client_responsibilities": [
+      "Client maintains responsibility for visual and legal clearance of corporate naming before asset creation."
+    ],
+    "ip_ownership": [
+      "Intellectual property rights for the finalized logo transfer to the client upon final milestone payment clearance."
+    ],
+    "change_request": [
+      "Changes to primary layout requirements after layout sign-off require a formal design change order fee."
+    ],
+    "timeline": [
+      "Timeline delays resulting from client review latency will push subsequent deliverable checkpoints."
+    ]
+  }
+}

@@ -110,7 +110,11 @@ class UpdateSOWResponse(BaseModel):
 
 
 class PDFExportResponse(BaseModel):
-    pdf_url: str = Field(examples=["https://storage.example.com/sow-pdfs/xxx/sow-xxx.pdf"])
+    success: bool = Field(default=True, examples=[True])
+    sow_id: str = Field(examples=["a1b2c3d4-e5f6-7890-abcd-ef1234567890"])
+    pdf_url: str = Field(examples=["https://storage.example.com/sow-pdfs/xxx/brief-to-scope-sow-xxx.pdf"])
+    filename: str = Field(examples=["brief-to-scope-sow-a1b2c3d4.pdf"])
+    generated_at: datetime = Field(examples=["2026-05-20T15:00:00"])
 
 
 class ESignResponse(BaseModel):

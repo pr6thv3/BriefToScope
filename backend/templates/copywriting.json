@@ -1,0 +1,89 @@
+{
+  "industry": "Copywriting",
+  "default_sections": [
+    "Project Overview",
+    "Objectives",
+    "Scope of Work",
+    "Deliverables",
+    "Timeline",
+    "Payment Schedule",
+    "Client Responsibilities",
+    "Revision Policy",
+    "Out of Scope",
+    "Assumptions",
+    "Acceptance Criteria",
+    "Signature Section"
+  ],
+  "standard_deliverables": [
+    "Content strategy and style alignment",
+    "SEO keyword strategy integration plan",
+    "First copy draft creation",
+    "Feedback review revisions",
+    "Final polished copy sheets"
+  ],
+  "common_out_of_scope_items": [
+    "Design or styling layout of page copy",
+    "Direct uploading of text into client CMS tools",
+    "Legality check of content claims",
+    "Interviews with third-party experts"
+  ],
+  "revision_policy": "Includes two rounds of copy reviews on the initial drafts.",
+  "payment_schedule_options": [
+    {
+      "label": "50/50 Billing",
+      "milestones": [
+        { "percentage": "50%", "condition": "Due upon signing SOW" },
+        { "percentage": "50%", "condition": "Due prior to delivery of final raw files" }
+      ]
+    }
+  ],
+  "risk_rules": [
+    {
+      "risk": "Tone preferences shift mid-draft",
+      "trigger_terms": ["tone", "voice", "vibe", "style direction"],
+      "recommended_fix": "Secure written approval on tone examples before starting primary outlines."
+    },
+    {
+      "risk": "Information delay stalls drafting",
+      "trigger_terms": ["information", "details", "subject details"],
+      "recommended_fix": "Set a timeline limit where delay in information auto-extends project delivery."
+    }
+  ],
+  "client_responsibilities": [
+    "Provide brand style and tone references",
+    "Provide factual notes and business data points",
+    "Submit clear text correction edits within review windows"
+  ],
+  "timeline_assumptions": [
+    "Reviews of drafts are completed within 5 business days.",
+    "Required factual information is provided at project kickoff."
+  ],
+  "acceptance_criteria": [
+    "All copy matches the approved tone directives.",
+    "Draft files pass SEO check requirements.",
+    "Client approves final copy layout sheets."
+  ],
+  "clause_library": {
+    "revision": [
+      "Rewrites based on changes in content direction after outlines are approved are billed as new project orders."
+    ],
+    "payment": [
+      "Invoices are payable within 7 days of draft delivery, regardless of review status."
+    ],
+    "out_of_scope": [
+      "Proofreading pre-existing client text is out of scope unless added as a line item."
+    ],
+    "client_responsibilities": [
+      "Client is responsible for verifying the accuracy of all technical details in the copy before publishing."
+    ],
+    "ip_ownership": [
+      "IP rights to all text drafts transfer to the client upon full payment clearance."
+    ],
+    "change_request": [
+      "Changes to primary layout requirements after outlines are approved require a layout change order fee."
+    ],
+    "timeline": [
+      "Delays in client feedback beyond 10 days will result in project closure and billing of completed work."
+    ]
+  }
+}
