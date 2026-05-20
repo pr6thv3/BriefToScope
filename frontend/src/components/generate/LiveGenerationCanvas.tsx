@@ -90,32 +90,33 @@ export function LiveGenerationCanvas({ steps, status, result, errorMsg, onRetry 
           <AnimatePresence>
             {/* Step 1: Extraction */}
             {progressIndex >= 1 && result && (
-              <AIExtractionCards brief={result.extracted_brief} />
+              <AIExtractionCards key="extraction-cards" brief={result.extracted_brief} />
             )}
 
             {/* Step 2: Deliverables */}
             {progressIndex >= 2 && result && (
-              <DeliverableCards deliverables={result.extracted_brief.deliverables} confidence={result.confidence_score} />
+              <DeliverableCards key="deliverable-cards" deliverables={result.extracted_brief.deliverables} confidence={result.confidence_score} />
             )}
 
             {/* Step 3: Risks */}
             {progressIndex >= 3 && result && (
-              <ScopeRiskCards risks={result.risk_flags} />
+              <ScopeRiskCards key="risk-cards" risks={result.risk_flags} />
             )}
 
             {/* Step 4: Commercial Scope */}
             {progressIndex >= 4 && result && (
-              <CommercialScopePreview sow={result.sow} />
+              <CommercialScopePreview key="commercial-scope" sow={result.sow} />
             )}
 
             {/* Step 5: Clauses */}
             {progressIndex >= 5 && result && (
-              <ClausePreview sow={result.sow} />
+              <ClausePreview key="clauses" sow={result.sow} />
             )}
 
             {/* Step 6 & 7: Final SOW & Quality */}
             {status === "completed" && result && (
               <motion.div
+                key="final-sow-container"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-8 border-t pt-8"
