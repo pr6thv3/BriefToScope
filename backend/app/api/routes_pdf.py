@@ -37,6 +37,7 @@ def _demo_fallback_response(sow_id: str) -> PDFExportResponse:
 
 
 @router.post("/sows/{sow_id}/export-pdf", response_model=PDFExportResponse)
+@router.post("/api/sows/{sow_id}/export-pdf", response_model=PDFExportResponse)
 async def export_pdf(
     sow_id: str,
     current_user: dict = Depends(get_current_user),

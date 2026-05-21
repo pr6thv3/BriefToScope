@@ -11,6 +11,7 @@ router = APIRouter()
 
 
 @router.post("/sows/{sow_id}/send-signature", response_model=ESignResponse)
+@router.post("/api/sows/{sow_id}/send-signature", response_model=ESignResponse)
 async def send_signature(
     sow_id: str,
     current_user: dict = Depends(get_current_user),

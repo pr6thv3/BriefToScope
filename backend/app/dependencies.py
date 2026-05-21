@@ -1,10 +1,10 @@
-from fastapi import Request, HTTPException, Depends
+from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import get_settings, Settings
 from app.utils.errors import AuthError
 from app.utils.logger import get_logger
-import httpx
 import jwt
+from jwt import PyJWKClient
 
 logger = get_logger(__name__)
 security = HTTPBearer(auto_error=False)
@@ -23,21 +23,25 @@ async def verify_clerk_token(
     token = credentials.credentials
 
     try:
-        # Fetch Clerk public key / JWKS
-        jwks_url = "https://api.clerk.dev/v1/jwks"
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                jwks_url,
-                headers={"Authorization": f"Bearer {settings.clerk_secret_key}"},
-            )
-            jwks = resp.json()
+        if not settings.clerk_jwks_url:
+            raise AuthError("CLERK_JWKS_URL is required outside DEMO_MODE")
 
-        # Simplified verification
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        user_id = unverified.get("sub", "")
-        email = unverified.get("email_address", "")
+        signing_key = PyJWKClient(settings.clerk_jwks_url).get_signing_key_from_jwt(token)
+        decode_kwargs = {
+            "algorithms": ["RS256"],
+            "options": {"verify_aud": False},
+        }
+        if settings.clerk_issuer:
+            decode_kwargs["issuer"] = settings.clerk_issuer
+        claims = jwt.decode(token, signing_key.key, **decode_kwargs)
 
-        return {"sub": user_id, "email": email}
+        return {
+            "sub": claims.get("sub", ""),
+            "email": claims.get("email") or claims.get("email_address", ""),
+            "name": claims.get("name", ""),
+            "org_id": claims.get("org_id") or claims.get("o", {}).get("id", ""),
+            "role": claims.get("org_role") or claims.get("o", {}).get("rol", ""),
+        }
     except Exception as e:
         logger.error("Token verification failed", exc_info=True)
         raise AuthError("Invalid token")

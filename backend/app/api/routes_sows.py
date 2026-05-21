@@ -13,6 +13,7 @@ router = APIRouter()
 
 
 @router.get("/sows", response_model=List[SOWListItem])
+@router.get("/api/sows", response_model=List[SOWListItem])
 async def list_sows(current_user: dict = Depends(get_current_user)):
     try:
         storage = StorageService()
@@ -41,6 +42,7 @@ async def list_sows(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/sows/{sow_id}", response_model=SOWDetailResponse)
+@router.get("/api/sows/{sow_id}", response_model=SOWDetailResponse)
 async def get_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
     try:
         storage = StorageService()
@@ -78,6 +80,7 @@ async def get_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/sows/{sow_id}", response_model=UpdateSOWResponse)
+@router.put("/api/sows/{sow_id}", response_model=UpdateSOWResponse)
 async def update_sow(
     sow_id: str,
     req: UpdateSOWRequest,

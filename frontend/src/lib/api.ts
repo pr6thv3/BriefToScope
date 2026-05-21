@@ -14,6 +14,7 @@ const API_BASE_URL =
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT";
   body?: unknown;
+  headers?: Record<string, string>;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -22,6 +23,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers: {
       "Content-Type": "application/json",
       Authorization: "Bearer demo",
+      ...(options.headers ?? {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
@@ -67,4 +69,18 @@ export const api = {
     request<ESignResponse>(`/sows/${sowId}/send-signature`, {
       method: "POST",
     }),
+  syncAuth: () => request<{ user: unknown; workspace: unknown }>("/api/auth/sync", { method: "POST" }),
+  listWorkspaces: () => request<unknown[]>("/api/workspaces"),
+  listProjects: () => request<unknown[]>("/api/projects"),
+  createGeneration: (payload: GenerateSOWRequest) =>
+    request<unknown>("/api/generations", { method: "POST", body: payload }),
+  listBillingPlans: () => request<unknown[]>("/api/billing/plans"),
+  getUsageSummary: () => request<unknown>("/api/billing/usage"),
+  createCheckout: (payload: { plan: string; success_url: string; cancel_url: string }) =>
+    request<{ checkout_url: string; demo_mode: boolean }>("/api/billing/checkout", {
+      method: "POST",
+      body: payload,
+    }),
+  listTemplateIndustries: () => request<{ industries: string[] }>("/api/templates"),
+  getTemplate: (industry: string) => request<unknown>(`/api/templates/${encodeURIComponent(industry)}`),
 };

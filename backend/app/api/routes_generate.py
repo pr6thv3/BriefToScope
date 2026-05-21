@@ -28,6 +28,7 @@ async def generate_sow(
     start_time = time.perf_counter()
     orchestrator = None
     storage = StorageService()
+    project_id = ""
 
     try:
         # 1. Validate

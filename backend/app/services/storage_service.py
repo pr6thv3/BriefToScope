@@ -61,17 +61,21 @@ class StorageService:
             logger.error(f"Failed to create user: {e}")
             raise StorageError("Failed to create user")
 
-    async def create_project(self, user_id: str, client_name: str, project_name: str, industry: str, status: str = "active") -> dict:
+    async def create_project(self, user_id: str, client_name: str, project_name: str, industry: str, status: str = "active", org_id: str = "") -> dict:
         data = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
+            "created_by": user_id,
             "client_name": client_name,
+            "name": project_name,
             "project_name": project_name,
             "industry": industry,
             "status": status,
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
         }
+        if org_id:
+            data["org_id"] = org_id
         if self._demo:
             _demo_projects[data["id"]] = data
             return data
@@ -118,7 +122,7 @@ class StorageService:
             raise StorageError("Failed to create transcript")
 
     async def create_sow(self, project_id: str, user_id: str, title: str, content_json: dict,
-                         content_markdown: str, risk_flags: list, confidence_score: float) -> dict:
+                         content_markdown: str, risk_flags: list, confidence_score: float, org_id: str = "") -> dict:
         data = {
             "id": str(uuid.uuid4()),
             "project_id": project_id,
@@ -132,6 +136,8 @@ class StorageService:
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
         }
+        if org_id:
+            data["org_id"] = org_id
         if self._demo:
             _demo_sows[data["id"]] = data
             return data

@@ -10,6 +10,8 @@ import {
   LayoutDashboard,
   Search,
   Settings,
+  Library,
+  CreditCard,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,8 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/generate", label: "Generate", icon: Bolt },
   { href: "/sow/demo-001", label: "Documents", icon: FileText },
+  { href: "/templates", label: "Templates", icon: Library },
+  { href: "/settings/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

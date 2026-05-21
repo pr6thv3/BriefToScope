@@ -24,6 +24,8 @@ To deploy this database layer directly onto your Supabase dashboard or local Pos
 2. **`indexes.sql`**: Optimizes the system for rapid SOW list retrieval and analytics operations.
 3. **`rls_policies.sql`**: Applies row isolation barriers preventing cross-user data leaks.
 4. **`seed.sql`**: Populates the industry template directory and inserts seed data for demo accounts.
+5. **`production_foundation.sql`**: Adds launch SaaS tables for workspace membership, section storage, billing, exports, jobs, and audit logs.
+6. **`production_rls_policies.sql`**: Upgrades RLS to organization-membership policies for production tenancy.
 
 > [!TIP]
 > You can run these commands directly inside the **SQL Editor** of your Supabase dashboard.
