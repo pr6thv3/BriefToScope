@@ -19,7 +19,7 @@ BriefToScope converts messy discovery-call notes into a complete Statement of Wo
   - API client: `frontend/src/lib/api.ts`.
 - Backend: `backend/`
   - FastAPI endpoints: `/generate-sow`, `/sows`, `/sows/{id}`, `/sows/{id}/export-pdf`, `/sows/{id}/send-signature`.
-  - Demo mode supports local full-flow development without Clerk, Supabase, provider keys, Playwright browser install, Stripe, or DocuSign credentials.
+  - Demo mode supports local full-flow development without Clerk, Supabase, provider keys, Playwright browser install, PayPal, or DocuSign credentials.
 
 ## Next Architecture Phase
 

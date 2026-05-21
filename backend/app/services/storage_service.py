@@ -15,6 +15,11 @@ _demo_sows = {}
 _demo_versions = {}
 _demo_esign = {}
 _demo_billing = {}
+_demo_billing_customers = {}
+_demo_subscriptions = {}
+_demo_webhook_events = {}
+_demo_generation_jobs = {}
+_demo_generation_job_events = {}
 
 
 class StorageService:
@@ -288,28 +293,177 @@ class StorageService:
             logger.error(f"Failed to log usage event: {e}")
             return data
 
-    async def get_billing_subscription(self, user_id: str) -> Optional[dict]:
+    async def get_billing_subscription(self, org_id: str) -> Optional[dict]:
         if self._demo:
-            for b in _demo_billing.values():
-                if b.get("user_id") == user_id:
-                    return b
-            return None
+            return _demo_subscriptions.get(org_id)
         try:
-            resp = self._get_client().table("billing_subscriptions").select("*").eq("user_id", user_id).single().execute()
+            resp = self._get_client().table("subscriptions").select("*").eq("org_id", org_id).single().execute()
             return resp.data
         except Exception:
             return None
 
     async def upsert_billing_subscription(self, data: dict) -> dict:
         if self._demo:
-            _demo_billing[data.get("id", str(uuid.uuid4()))] = data
+            _demo_subscriptions[data["org_id"]] = data
             return data
         try:
-            resp = self._get_client().table("billing_subscriptions").upsert(data).execute()
+            resp = self._get_client().table("subscriptions").upsert(data, on_conflict="org_id").execute()
             return resp.data[0]
         except Exception as e:
             logger.error(f"Failed to upsert billing subscription: {e}")
             raise StorageError("Failed to update billing subscription")
+
+    async def get_billing_customer_by_paypal_payer_id(self, paypal_payer_id: str) -> Optional[dict]:
+        if self._demo:
+            for customer in _demo_billing_customers.values():
+                if customer.get("paypal_payer_id") == paypal_payer_id:
+                    return customer
+            return None
+        try:
+            resp = self._get_client().table("billing_customers").select("*").eq("paypal_payer_id", paypal_payer_id).single().execute()
+            return resp.data
+        except Exception:
+            return None
+
+    async def upsert_billing_customer(self, org_id: str, paypal_payer_id: str) -> dict:
+        data = {
+            "org_id": org_id,
+            "paypal_payer_id": paypal_payer_id,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+        if self._demo:
+            existing = _demo_billing_customers.get(org_id, {})
+            data = {"id": existing.get("id", str(uuid.uuid4())), **existing, **data}
+            _demo_billing_customers[org_id] = data
+            return data
+        try:
+            resp = self._get_client().table("billing_customers").upsert(data, on_conflict="org_id").execute()
+            return resp.data[0]
+        except Exception as e:
+            logger.error(f"Failed to upsert billing customer: {e}")
+            raise StorageError("Failed to update billing customer")
+
+    async def update_organization_plan(self, org_id: str, plan: str, status: str) -> dict:
+        data = {"plan": plan, "status": status, "updated_at": datetime.utcnow().isoformat()}
+        if self._demo:
+            return {"id": org_id, **data}
+        try:
+            resp = self._get_client().table("organizations").update(data).eq("id", org_id).execute()
+            return resp.data[0] if resp.data else {}
+        except Exception as e:
+            logger.error(f"Failed to update organization plan: {e}")
+            raise StorageError("Failed to update organization plan")
+
+    async def record_webhook_event(self, provider: str, event_id: str, event_type: str, payload_json: dict) -> tuple[dict, bool]:
+        if self._demo:
+            key = f"{provider}:{event_id}"
+            if key in _demo_webhook_events:
+                return _demo_webhook_events[key], False
+            event = {
+                "id": str(uuid.uuid4()),
+                "provider": provider,
+                "event_id": event_id,
+                "event_type": event_type,
+                "payload_json": payload_json,
+                "status": "received",
+                "retry_count": 0,
+                "created_at": datetime.utcnow().isoformat(),
+            }
+            _demo_webhook_events[key] = event
+            return event, True
+        try:
+            existing = self._get_client().table("webhook_events").select("*").eq("provider", provider).eq("event_id", event_id).limit(1).execute()
+            if existing.data:
+                return existing.data[0], False
+            data = {
+                "provider": provider,
+                "event_id": event_id,
+                "event_type": event_type,
+                "payload_json": payload_json,
+                "status": "received",
+            }
+            resp = self._get_client().table("webhook_events").insert(data).execute()
+            return resp.data[0], True
+        except Exception as e:
+            logger.error(f"Failed to record webhook event: {e}")
+            raise StorageError("Failed to record webhook event")
+
+    async def mark_webhook_event(self, provider: str, event_id: str, status: str) -> None:
+        data = {"status": status}
+        if status in {"processed", "failed", "ignored"}:
+            data["processed_at"] = datetime.utcnow().isoformat()
+        if self._demo:
+            key = f"{provider}:{event_id}"
+            if key in _demo_webhook_events:
+                _demo_webhook_events[key].update(data)
+            return
+        try:
+            self._get_client().table("webhook_events").update(data).eq("provider", provider).eq("event_id", event_id).execute()
+        except Exception as e:
+            logger.error(f"Failed to mark webhook event: {e}")
+
+    async def create_generation_job(self, data: dict) -> dict:
+        if self._demo:
+            _demo_generation_jobs[data["id"]] = data
+            return data
+        try:
+            resp = self._get_client().table("generation_jobs").insert(data).execute()
+            return resp.data[0] if resp.data else data
+        except Exception as e:
+            logger.error(f"Failed to create generation job: {e}")
+            raise StorageError("Failed to create generation job")
+
+    async def get_generation_job(self, job_id: str) -> Optional[dict]:
+        if self._demo:
+            return _demo_generation_jobs.get(job_id)
+        try:
+            resp = self._get_client().table("generation_jobs").select("*").eq("id", job_id).single().execute()
+            return resp.data
+        except Exception:
+            return None
+
+    async def update_generation_job(self, job_id: str, data: dict) -> dict:
+        data["updated_at"] = datetime.utcnow().isoformat()
+        if self._demo:
+            if job_id not in _demo_generation_jobs:
+                raise StorageError("Generation job not found")
+            _demo_generation_jobs[job_id].update(data)
+            return _demo_generation_jobs[job_id]
+        try:
+            resp = self._get_client().table("generation_jobs").update(data).eq("id", job_id).execute()
+            return resp.data[0] if resp.data else data
+        except Exception as e:
+            logger.error(f"Failed to update generation job: {e}")
+            raise StorageError("Failed to update generation job")
+
+    async def create_generation_job_event(self, generation_job_id: str, event: dict) -> dict:
+        data = {
+            "generation_job_id": generation_job_id,
+            "step": event["step"],
+            "status": event["status"],
+            "progress": event["progress"],
+            "message": event["message"],
+            "created_at": event.get("created_at", datetime.utcnow().isoformat()),
+        }
+        if self._demo:
+            _demo_generation_job_events.setdefault(generation_job_id, []).append(data)
+            return data
+        try:
+            resp = self._get_client().table("generation_job_events").insert(data).execute()
+            return resp.data[0] if resp.data else data
+        except Exception as e:
+            logger.error(f"Failed to create generation job event: {e}")
+            return data
+
+    async def get_generation_job_events(self, generation_job_id: str) -> List[dict]:
+        if self._demo:
+            return _demo_generation_job_events.get(generation_job_id, [])
+        try:
+            resp = self._get_client().table("generation_job_events").select("*").eq("generation_job_id", generation_job_id).order("created_at").execute()
+            return resp.data or []
+        except Exception as e:
+            logger.error(f"Failed to get generation job events: {e}")
+            return []
 
     async def update_sow_status(self, sow_id: str, status: str) -> dict:
         if self._demo:

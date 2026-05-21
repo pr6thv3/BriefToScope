@@ -39,7 +39,7 @@ A1 Transcript Cleaner
 | PDF | Playwright, Jinja2 HTML templates |
 | Auth | Clerk |
 | E-Sign | DocuSign (sandbox) |
-| Payments | Stripe (scaffold) |
+| Payments | PayPal Subscriptions (scaffold) |
 
 ---
 
@@ -95,8 +95,15 @@ Set `DEMO_MODE=true` in `backend/.env` to run without API keys, database, or aut
 | `DOCUSIGN_CLIENT_SECRET` | No | DocuSign sandbox client secret |
 | `DOCUSIGN_ACCOUNT_ID` | No | DocuSign sandbox account ID |
 | `DOCUSIGN_BASE_URL` | No | DocuSign sandbox base URL |
-| `STRIPE_SECRET_KEY` | No | Stripe secret (scaffold) |
-| `STRIPE_WEBHOOK_SECRET` | No | Stripe webhook secret (scaffold) |
+| `PAYPAL_CLIENT_ID` | No | PayPal REST app client ID |
+| `PAYPAL_CLIENT_SECRET` | No | PayPal REST app client secret |
+| `PAYPAL_WEBHOOK_ID` | No | PayPal webhook ID for signature verification |
+| `PAYPAL_MODE` | No | `sandbox` or `live` |
+| `PAYPAL_PLAN_SOLO` | No | PayPal subscription plan ID for Solo |
+| `PAYPAL_PLAN_STUDIO` | No | PayPal subscription plan ID for Studio |
+| `PAYPAL_PLAN_AGENCY` | No | PayPal subscription plan ID for Agency |
+| `REDIS_URL` | No | Redis URL for Celery workers |
+| `CELERY_ENABLED` | No | Set `true` to dispatch generation jobs to Celery |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -117,6 +124,7 @@ Set `DEMO_MODE=true` in `backend/.env` to run without API keys, database, or aut
 | `PUT` | `/sows/{id}` | Update SOW content |
 | `POST` | `/sows/{id}/export-pdf` | Generate + upload PDF |
 | `POST` | `/sows/{id}/send-signature` | Send for e-signature |
+| `POST` | `/webhooks/paypal` | PayPal subscription webhook |
 | `POST` | `/webhooks/docusign` | DocuSign status webhook |
 
 ---

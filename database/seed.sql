@@ -382,7 +382,7 @@ INSERT INTO templates (industry, template_name, structure_json, clause_library_j
         },
         "exclusions_default": [
             "Entering more than fifty (50) manual product listings",
-            "Setting up payment processors outside Stripe/Shopify Payments",
+            "Setting up payment processors outside PayPal/Shopify Payments",
             "Custom inventory ERP synchronization coding",
             "Dealing with tax registration approvals in foreign countries"
         ],

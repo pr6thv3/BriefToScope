@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from app.models.production_schemas import GenerationCreateRequest
 from app.services.ai_orchestrator import AIOrchestrator
@@ -11,19 +11,18 @@ from app.services.usage_service import UsageService
 from app.services.workspace_service import WorkspaceService
 from app.utils.security import sanitize_transcript, validate_transcript_length
 
-_demo_generation_jobs: Dict[str, dict] = {}
-_demo_generation_events: Dict[str, List[dict]] = {}
-
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 class GenerationJobService:
-    """Generation job facade.
+    """Generation job facade backed by Postgres in production.
 
-    This is intentionally API-compatible with future Celery/Redis workers while
-    still running in-process for local/demo development.
+    API requests create durable jobs/events. Celery workers can execute the job
+    in a separate process because state is read from `generation_jobs`, while
+    demo/local development can still run the same method in FastAPI background
+    tasks without Redis.
     """
 
     def __init__(self):
@@ -52,31 +51,33 @@ class GenerationJobService:
             "created_at": _now(),
             "updated_at": _now(),
         }
-        _demo_generation_jobs[job["id"]] = job
-        _demo_generation_events[job["id"]] = [self._event("queued", 0, "Generation queued")]
+        await self.storage.create_generation_job(job)
+        await self.storage.create_generation_job_event(job["id"], self._event("queued", 0, "Generation queued", status="queued"))
         return job
 
     async def get_job(self, job_id: str) -> Optional[dict]:
-        return _demo_generation_jobs.get(job_id)
+        return await self.storage.get_generation_job(job_id)
 
     async def get_events(self, job_id: str) -> List[dict]:
-        return _demo_generation_events.get(job_id, [])
+        return await self.storage.get_generation_job_events(job_id)
 
     async def run_job(self, job_id: str) -> None:
-        job = _demo_generation_jobs.get(job_id)
+        job = await self.storage.get_generation_job(job_id)
         if not job:
+            return
+        if job.get("status") == "completed":
             return
 
         payload = GenerationCreateRequest.model_validate(job["request_json"])
         raw = sanitize_transcript(payload.transcript_text)
         validation_error = validate_transcript_length(raw)
         if validation_error:
-            self._mark_failed(job_id, validation_error)
+            await self.mark_failed(job_id, validation_error)
             return
 
         orchestrator = AIOrchestrator()
         try:
-            self._update(job_id, "running", "cleaning", 10, "Cleaning transcript")
+            await self._update(job_id, "running", "cleaning", 10, "Cleaning transcript")
             project = await self.storage.create_project(
                 user_id=job["user_id"],
                 org_id=job["org_id"],
@@ -91,8 +92,7 @@ class GenerationJobService:
                 cleaned_text=raw[:5000],
                 metadata={"tone": payload.tone, "generation_job_id": job_id},
             )
-            job["project_id"] = project["id"]
-            job["transcript_id"] = transcript["id"]
+            await self.storage.update_generation_job(job_id, {"project_id": project["id"], "transcript_id": transcript["id"]})
 
             async def status_callback(step: str):
                 progress = {
@@ -104,7 +104,7 @@ class GenerationJobService:
                     "composing": 82,
                     "validating": 92,
                 }.get(step, 50)
-                self._update(job_id, "running", step, progress, step.replace("_", " ").title())
+                await self._update(job_id, "running", step, progress, step.replace("_", " ").title())
 
             output = await orchestrator.generate_sow(
                 transcript_text=raw,
@@ -141,27 +141,36 @@ class GenerationJobService:
                 metadata={"generation_job_id": job_id},
             )
 
-            job["sow_id"] = sow["id"]
-            self._update(job_id, "completed", "completed", 100, "SOW generated")
+            await self.storage.update_generation_job(job_id, {"sow_id": sow["id"]})
+            await self._update(job_id, "completed", "completed", 100, "SOW generated")
         except Exception as e:
-            self._mark_failed(job_id, str(e))
-            if job.get("project_id"):
+            await self.mark_failed(job_id, str(e))
+            latest = await self.storage.get_generation_job(job_id)
+            if latest and latest.get("project_id"):
                 try:
-                    await self.storage.update_project_status(job["project_id"], "failed")
+                    await self.storage.update_project_status(latest["project_id"], "failed")
                 except Exception:
                     pass
         finally:
             await orchestrator.close()
 
-    def _update(self, job_id: str, status: str, step: str, progress: int, message: str) -> None:
-        job = _demo_generation_jobs[job_id]
-        job.update({"status": status, "current_step": step, "progress": progress, "updated_at": _now()})
-        _demo_generation_events.setdefault(job_id, []).append(self._event(step, progress, message, status=status))
+    async def mark_failed(self, job_id: str, error: str) -> None:
+        await self.storage.update_generation_job(
+            job_id,
+            {"status": "failed", "current_step": "failed", "error": error},
+        )
+        job = await self.storage.get_generation_job(job_id)
+        await self.storage.create_generation_job_event(
+            job_id,
+            self._event("failed", job.get("progress", 0) if job else 0, error, status="failed"),
+        )
 
-    def _mark_failed(self, job_id: str, error: str) -> None:
-        job = _demo_generation_jobs[job_id]
-        job.update({"status": "failed", "current_step": "failed", "error": error, "updated_at": _now()})
-        _demo_generation_events.setdefault(job_id, []).append(self._event("failed", job.get("progress", 0), error, status="failed"))
+    async def _update(self, job_id: str, status: str, step: str, progress: int, message: str) -> None:
+        await self.storage.update_generation_job(
+            job_id,
+            {"status": status, "current_step": step, "progress": progress, "error": None},
+        )
+        await self.storage.create_generation_job_event(job_id, self._event(step, progress, message, status=status))
 
     def _event(self, step: str, progress: int, message: str, status: str = "running") -> dict:
         return {
@@ -197,4 +206,3 @@ def _to_markdown(sow, client_name: str) -> str:
             lines.append(value)
         lines.append("")
     return "\n".join(lines)
-

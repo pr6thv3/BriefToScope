@@ -173,12 +173,12 @@ CREATE TABLE IF NOT EXISTS usage_events (
 );
 
 
--- 10. BILLING_SUBSCRIPTIONS (Stripe sync mappings)
+-- 10. BILLING_SUBSCRIPTIONS (PayPal sync mappings)
 CREATE TABLE IF NOT EXISTS billing_subscriptions (
-    id VARCHAR(255) PRIMARY KEY, -- Stripe Subscription ID
+    id VARCHAR(255) PRIMARY KEY, -- PayPal Subscription ID
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    stripe_customer_id VARCHAR(255) NOT NULL,
-    stripe_subscription_id VARCHAR(255) UNIQUE NOT NULL,
+    paypal_payer_id VARCHAR(255) NOT NULL,
+    paypal_subscription_id VARCHAR(255) UNIQUE NOT NULL,
     plan VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL,
     current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,

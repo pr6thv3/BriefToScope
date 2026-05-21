@@ -8,7 +8,7 @@ FastAPI backend for BriefToScope — an AI SaaS that turns messy agency call not
 - **SOW Management**: Create, list, view, update, and version SOWs
 - **PDF Export**: Playwright-based professional PDF generation with HTML fallback
 - **E-Signature**: DocuSign sandbox integration with automatic demo fallback
-- **Billing**: Stripe webhook handling scaffolded
+- **Billing**: PayPal subscription checkout and webhook handling scaffolded
 - **Demo Mode**: `DEMO_MODE=true` enables mock data for hackathon judging
 
 ## Tech Stack
@@ -19,7 +19,7 @@ FastAPI backend for BriefToScope — an AI SaaS that turns messy agency call not
 - OpenAI / Anthropic API
 - Playwright (PDF export)
 - Clerk (auth verification)
-- Stripe (billing webhooks)
+- PayPal (subscription billing webhooks)
 
 ---
 
@@ -56,8 +56,13 @@ OPENAI_API_KEY=sk-...
 SUPABASE_URL=https://...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 CLERK_SECRET_KEY=sk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+PAYPAL_CLIENT_ID=...
+PAYPAL_CLIENT_SECRET=...
+PAYPAL_WEBHOOK_ID=...
+PAYPAL_MODE=sandbox
+PAYPAL_PLAN_SOLO=P-...
+PAYPAL_PLAN_STUDIO=P-...
+PAYPAL_PLAN_AGENCY=P-...
 FRONTEND_URL=https://your-app.vercel.app
 BACKEND_URL=https://your-api.onrender.com
 ```
@@ -70,6 +75,9 @@ uvicorn app.main:app --reload --port 8000
 
 # With demo mode
 DEMO_MODE=true uvicorn app.main:app --reload --port 8000
+
+# Optional worker once REDIS_URL and CELERY_ENABLED=true are configured
+celery -A app.workers.celery_app.celery_app worker -Q ai --loglevel=info
 ```
 
 OpenAPI docs: `http://localhost:8000/docs`
@@ -156,8 +164,8 @@ CREATE TABLE esign_requests (
 CREATE TABLE billing_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id),
-  stripe_customer_id TEXT,
-  stripe_subscription_id TEXT,
+  paypal_payer_id TEXT,
+  paypal_subscription_id TEXT,
   plan TEXT,
   status TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -217,7 +225,11 @@ services:
         sync: false
       - key: CLERK_SECRET_KEY
         sync: false
-      - key: STRIPE_SECRET_KEY
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
         sync: false
       - key: FRONTEND_URL
         sync: false
@@ -236,7 +248,7 @@ services:
 | PUT | `/sows/{id}` | Update SOW (creates version) |
 | POST | `/sows/{id}/export-pdf` | Export PDF |
 | POST | `/sows/{id}/send-signature` | Send e-signature request |
-| POST | `/webhooks/stripe` | Stripe webhooks |
+| POST | `/webhooks/paypal` | PayPal subscription webhooks |
 | POST | `/webhooks/docusign` | DocuSign webhooks |
 
 ### Quick Test (Demo Mode)
@@ -267,7 +279,7 @@ Set `DEMO_MODE=true` to run without any external API keys:
 - **Storage**: Uses in-memory storage (no Supabase needed)
 - **PDF**: Returns HTML fallback when Playwright is unavailable
 - **E-Sign**: Returns mock DocuSign signing URLs
-- **Billing**: Accepts Stripe webhooks without signature verification
+- **Billing**: Accepts PayPal webhooks without signature verification
 
 This is the recommended configuration for hackathon judging and frontend development.
 

@@ -30,6 +30,13 @@ To deploy this database layer directly onto your Supabase dashboard or local Pos
 > [!TIP]
 > You can run these commands directly inside the **SQL Editor** of your Supabase dashboard.
 
+For the production pair, you can also use the ordered PowerShell runner:
+
+```powershell
+$env:DATABASE_URL="postgresql://..."
+.\apply_production_migrations.ps1
+```
+
 ---
 
 ## 🤖 AI Workflow & Trace Storage

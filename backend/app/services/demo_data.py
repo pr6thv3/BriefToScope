@@ -13,7 +13,7 @@ Sarah: We have an in-house team for photography but descriptions are outsourced.
 
 Mike: Payment gateways?
 
-Sarah: Stripe and PayPal for sure. Maybe Klarna later but not phase 1.
+Sarah: PayPal for sure. Maybe Klarna later but not phase 1.
 
 Mike: What about integrations? ERP, CRM?
 
@@ -69,7 +69,7 @@ def get_fallback_sow():
             "Frontend development: responsive, mobile-first React/Next.js storefront",
             "Backend development: API layer, middleware for ERP/CRM integrations, custom business logic",
             "Content migration strategy: product catalog, customer data, order history, SEO redirects",
-            "Payment gateway setup: Stripe, PayPal (phase 1); Klarna scoping (phase 2)",
+            "Payment gateway setup: PayPal (phase 1); Klarna scoping (phase 2)",
             "Multi-language and multi-currency configuration with geo-IP routing",
             "Third-party integrations: Yotpo, Smile, Klaviyo, NetSuite, Salesforce",
             "Accessibility audit and remediation to WCAG 2.1 AA",

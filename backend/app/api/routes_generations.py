@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from app.dependencies import get_current_user
 from app.models.production_schemas import GenerationCreateRequest, GenerationJobResponse
 from app.services.generation_job_service import GenerationJobService
+from app.workers.dispatcher import dispatch_generation_job
 
 router = APIRouter(prefix="/api/generations", tags=["Generations"])
 
@@ -20,7 +21,13 @@ async def create_generation(
 ):
     service = GenerationJobService()
     job = await service.create_job(req, current_user, x_workspace_id or None)
-    background_tasks.add_task(service.run_job, job["id"])
+    try:
+        dispatched = dispatch_generation_job(job["id"])
+    except RuntimeError as exc:
+        await service.mark_failed(job["id"], str(exc))
+        raise HTTPException(status_code=503, detail=str(exc))
+    if not dispatched:
+        background_tasks.add_task(service.run_job, job["id"])
     return job
 
 
@@ -49,4 +56,3 @@ async def stream_generation_events(generation_id: str, current_user: dict = Depe
             await asyncio.sleep(1)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
-

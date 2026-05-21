@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS pdf_exports (
 CREATE TABLE IF NOT EXISTS billing_customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
-    stripe_customer_id VARCHAR(255) UNIQUE NOT NULL,
+    paypal_payer_id VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -185,8 +185,8 @@ CREATE TABLE IF NOT EXISTS billing_customers (
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
-    stripe_subscription_id VARCHAR(255) UNIQUE,
-    stripe_price_id VARCHAR(255),
+    paypal_subscription_id VARCHAR(255) UNIQUE,
+    paypal_plan_id VARCHAR(255),
     plan VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL,
     seat_quantity INTEGER DEFAULT 1 NOT NULL,

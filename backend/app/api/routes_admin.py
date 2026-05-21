@@ -12,9 +12,8 @@ async def readiness(current_user: dict = Depends(get_current_user)):
         "checks": {
             "auth": "configured_or_demo",
             "database": "supabase_or_demo",
-            "jobs": "in_process_with_celery_ready_interface",
-            "billing": "stripe_checkout_ready",
+            "jobs": "celery_redis_ready_with_local_fallback",
+            "billing": "paypal_subscriptions_ready",
             "audit_logs": "enabled",
         },
     }
-

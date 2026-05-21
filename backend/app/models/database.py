@@ -78,8 +78,8 @@ class ESignRequest(BaseModel):
 class BillingSubscription(BaseModel):
     id: str
     user_id: str
-    stripe_customer_id: str
-    stripe_subscription_id: str
+    paypal_payer_id: str
+    paypal_subscription_id: str
     plan: str
     status: str
     created_at: datetime

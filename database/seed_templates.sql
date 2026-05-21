@@ -419,8 +419,8 @@ INSERT INTO templates (industry, template_name, structure_json, clause_library_j
     'Ecommerce Store Integration Template',
     '{
         "default_sections": ["Project Overview", "Objectives", "Scope of Work", "Deliverables", "Timeline", "Payment Schedule", "Client Responsibilities", "Revision Policy", "Out of Scope", "Assumptions", "Acceptance Criteria", "Signature Section"],
-        "standard_deliverables": ["Storefront styling and module configurations", "Product catalog import and categorization (up to 50 items)", "Payment gateway integration (Stripe/Shopify Payments)", "Shipping and tax calculation configurations", "Transactional email notifications styling", "End-to-end checkout testing validation"],
-        "common_out_of_scope_items": ["Manual data entry of more than 50 product pages", "Setting up merchant accounts on platforms other than Stripe", "Custom inventory ERP synchronization development", "Handling legal business tax filings in foreign regions"],
+        "standard_deliverables": ["Storefront styling and module configurations", "Product catalog import and categorization (up to 50 items)", "Payment gateway integration (PayPal/Shopify Payments)", "Shipping and tax calculation configurations", "Transactional email notifications styling", "End-to-end checkout testing validation"],
+        "common_out_of_scope_items": ["Manual data entry of more than 50 product pages", "Setting up merchant accounts on platforms other than PayPal", "Custom inventory ERP synchronization development", "Handling legal business tax filings in foreign regions"],
         "revision_policy": "Includes two rounds of styling and category revisions before going live.",
         "payment_schedule_options": [
             {
