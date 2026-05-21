@@ -3,7 +3,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-ESTIMATED_COST_PER_1K_TOKENS = 0.005  # placeholder for gpt-4o-mini pricing
+ESTIMATED_COST_PER_1K_TOKENS = 0.005
 
 
 class UsageService:

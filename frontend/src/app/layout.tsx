@@ -15,9 +15,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BriefToScope",
+  metadataBase: new URL("https://brieftoscope.com"),
+  title: {
+    default: "BriefToScope | AI Scope Intelligence for Agencies",
+    template: "%s | BriefToScope",
+  },
   description:
-    "AI-powered SOW generation for agencies and freelancers.",
+    "BriefToScope turns messy discovery notes into commercially safe, editable Statements of Work with AI-powered scope risk intelligence.",
+  keywords: ["scope intelligence", "statement of work", "agency operations", "AI SOW", "scope creep"],
+  openGraph: {
+    title: "BriefToScope",
+    description: "AI scope intelligence for agencies that need client-ready SOWs and scope-risk protection.",
+    url: "https://brieftoscope.com",
+    siteName: "BriefToScope",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BriefToScope",
+    description: "AI scope intelligence for agencies.",
+  },
 };
 
 export default function RootLayout({

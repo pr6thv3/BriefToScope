@@ -3,7 +3,7 @@ from typing import Optional
 from app.config import get_settings
 from app.services.storage_service import StorageService
 from app.utils.logger import get_logger
-from app.utils.errors import StorageError
+from app.utils.errors import BriefToScopeError
 import httpx
 
 logger = get_logger(__name__)
@@ -19,14 +19,13 @@ class ESignService:
             return await self._demo_send(sow_id, sow)
 
         if not self.settings.docusign_client_id:
-            logger.warning("DocuSign not configured, using demo mode")
-            return await self._demo_send(sow_id, sow)
+            raise BriefToScopeError("DocuSign is not configured for this environment", 503)
 
         try:
             return await self._docusign_send(sow_id, sow)
         except Exception as e:
-            logger.error(f"DocuSign send failed: {e}, falling back to demo")
-            return await self._demo_send(sow_id, sow)
+            logger.error(f"DocuSign send failed: {e}")
+            raise BriefToScopeError("Failed to send signature request", 502)
 
     async def _demo_send(self, sow_id: str, sow: dict) -> dict:
         signing_url = f"{self.settings.frontend_url}/demo-sign/{sow_id}"
@@ -45,7 +44,6 @@ class ESignService:
         }
 
     async def _docusign_send(self, sow_id: str, sow: dict) -> dict:
-        # Placeholder for DocuSign REST API v2.1 envelope creation
         account_id = self.settings.docusign_account_id
         base_url = self.settings.docusign_base_url or "https://demo.docusign.net/restapi"
         access_token = await self._get_docusign_access_token()
@@ -99,8 +97,7 @@ class ESignService:
         }
 
     async def _get_docusign_access_token(self) -> str:
-        # DocuSign JWT grant placeholder
-        return "demo_token"
+        raise BriefToScopeError("DocuSign OAuth token exchange is not configured", 503)
 
     async def handle_webhook(self, event: dict) -> Optional[dict]:
         envelope_id = event.get("data", {}).get("envelopeId", event.get("envelopeId"))

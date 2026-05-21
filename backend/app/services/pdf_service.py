@@ -3,7 +3,7 @@
 Renders SOW data into a premium HTML template, converts to PDF via Playwright,
 uploads to Supabase Storage, and updates the SOW record.
 
-Hardened for hackathon demo reliability:
+Hardened for local/demo reliability:
 - Every step has structured logging.
 - Playwright has a timeout guard (30s).
 - HTML rendering has a fallback template.
@@ -42,8 +42,7 @@ ORDERED_SECTIONS = [
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 
-# Playwright timeout (ms) — generous to allow Google Fonts to load,
-# short enough to fail fast for the hackathon demo.
+# Playwright timeout (ms): generous enough for fonts, short enough to fail fast.
 PLAYWRIGHT_TIMEOUT_MS = 30_000
 
 

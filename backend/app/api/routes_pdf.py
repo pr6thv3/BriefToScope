@@ -1,10 +1,7 @@
 """PDF export API route for BriefToScope.
 
-Hardened for hackathon demo reliability:
-- DEMO_MODE synthesises a full SOW if the ID is not found.
-- Every failure path returns a usable PDFExportResponse.
-- Structured logging traces every decision point.
-- Usage events are tracked on success (non-blocking).
+Demo mode keeps the product reviewable without provider credentials. Production
+deployments should run exports through workers and private signed storage URLs.
 """
 
 from datetime import datetime, timezone

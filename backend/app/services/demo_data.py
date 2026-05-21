@@ -1,4 +1,4 @@
-"""Rich demo / fallback data for hackathon reliability."""
+"""Rich demo / fallback data for local product review."""
 
 SAMPLE_TRANSCRIPT = """
 Sarah (Client): Hey Mike, thanks for jumping on. So we need to completely redesign our e-commerce platform. Right now we're on Magento 1, it's ancient, security patches are a nightmare. We want something modern, probably Shopify Plus or headless. Budget-wise we're thinking around $120,000. Timeline is aggressive — we need to launch before Black Friday, so that's basically end of September for soft launch, mid-October for full rollout.

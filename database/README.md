@@ -81,7 +81,7 @@ To migrate from the mock in-memory stores to this Supabase database layer, updat
 ```env
 DEMO_MODE=false
 SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
+SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>
 ```
 
 Once `DEMO_MODE` is disabled, the backend `StorageService` (`app/services/storage_service.py`) automatically initializes the Supabase Python Client and routes all queries directly to the tables configured by this schema.

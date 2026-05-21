@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     posthog_key: str = ""
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
+    rate_limit_requests_per_minute: int = 120
+    admin_email_allowlist: str = ""
     demo_mode: bool = False
 
     model_config = ConfigDict(
@@ -38,6 +40,24 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+
+def validate_production_settings(settings: Settings) -> None:
+    if settings.demo_mode:
+        return
+
+    required = {
+        "OPENAI_API_KEY": settings.openai_api_key,
+        "SUPABASE_URL": settings.supabase_url,
+        "SUPABASE_SERVICE_ROLE_KEY": settings.supabase_service_role_key,
+        "CLERK_JWKS_URL": settings.clerk_jwks_url,
+        "CLERK_ISSUER": settings.clerk_issuer,
+        "FRONTEND_URL": settings.frontend_url,
+        "BACKEND_URL": settings.backend_url,
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise RuntimeError(f"Missing required production environment variables: {', '.join(missing)}")
 
 
 @lru_cache()
