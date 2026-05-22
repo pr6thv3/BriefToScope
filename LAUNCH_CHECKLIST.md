@@ -17,6 +17,8 @@
 - Backend tests pass.
 - Frontend lint and build pass.
 - Repository documentation added.
+- Single-`main` branch policy documented.
+- Dependency monitoring moved to scheduled audit workflow to avoid automation branches.
 
 ## In Progress
 
@@ -55,7 +57,7 @@
 - Replace frontend demo auth header with Clerk JWT.
 - Enforce private file storage for PDFs.
 - Add edge/distributed rate limits.
-- Add dependency scanning and Dependabot.
+- Monitor scheduled dependency audit workflow and patch manually on `main`.
 - Add production environment validation.
 - Lock admin access with allowlist and role checks.
 

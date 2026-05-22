@@ -32,7 +32,7 @@ BriefToScope has a credible security foundation for a private beta: JWT verifica
 | Service role used by backend | Medium | Accepted | Keep backend-only; enforce permissions before writes |
 | In-process rate limiting | Medium | Open | Add Cloudflare/Upstash distributed rate limits |
 | Admin route not fully privileged | Medium | Open | Enforce email allowlist and owner/admin checks |
-| Dependency vulnerabilities unknown | Medium | Open | Add Dependabot and scheduled audits |
+| Dependency vulnerabilities unknown | Medium | Open | Review scheduled dependency-audit workflow failures and patch manually on `main` |
 | Legal/compliance pages incomplete | Medium | Open | Add privacy, terms, AI disclosure, retention policy |
 
 ## OWASP Checklist

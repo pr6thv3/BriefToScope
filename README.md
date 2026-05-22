@@ -152,6 +152,10 @@ Read these before selling or deploying:
 
 BriefToScope currently uses **PayPal Subscriptions** for paid plan approval and webhook reconciliation. Stripe is intentionally not part of the active billing architecture unless the product direction changes.
 
+## Branch Policy
+
+This repository is operated from a single active branch: `main`. Do not leave feature, Codex, or automation branches active after work is finished. Dependency monitoring runs through scheduled audit workflows instead of branch-generating update bots.
+
 ## License
 
 See [LICENSE](LICENSE).

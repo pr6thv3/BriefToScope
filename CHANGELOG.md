@@ -11,6 +11,7 @@
 - PayPal subscription checkout and webhook reconciliation.
 - Security headers and basic rate limiting.
 - Repository documentation, launch reports, and governance files.
+- Scheduled dependency-audit workflow that does not create extra branches.
 
 ### Changed
 
