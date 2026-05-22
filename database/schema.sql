@@ -166,9 +166,14 @@ CREATE TABLE IF NOT EXISTS usage_events (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     org_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
     event_type VARCHAR(100) NOT NULL,
+    quantity INTEGER DEFAULT 1 NOT NULL,
     token_count INTEGER DEFAULT 0 NOT NULL,
+    tokens INTEGER DEFAULT 0 NOT NULL,
     estimated_cost NUMERIC(10, 5) DEFAULT 0.00000 NOT NULL,
+    cost NUMERIC(12, 6) DEFAULT 0.000000 NOT NULL,
     metadata_json JSONB DEFAULT '{}'::jsonb NOT NULL,
+    billing_period_start TIMESTAMP WITH TIME ZONE,
+    billing_period_end TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 

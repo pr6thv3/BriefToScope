@@ -21,6 +21,7 @@ type SOWSectionBlockProps = {
   section: SOWSection;
   isActive: boolean;
   isSaving: boolean;
+  canEdit: boolean;
   onActivate: (sectionKey: SOWSectionKey) => void;
   onCancel: () => void;
   onSave: (sectionKey: SOWSectionKey, contentMarkdown: string) => Promise<boolean>;
@@ -34,6 +35,7 @@ export function SOWSectionBlock({
   section,
   isActive,
   isSaving,
+  canEdit,
   onActivate,
   onCancel,
   onSave,
@@ -60,6 +62,7 @@ export function SOWSectionBlock({
   }, [section.content_markdown, isActive, isStreaming]);
 
   async function handleSave() {
+    if (!canEdit) return;
     const saved = await onSave(section.section_key, draft);
     if (saved) {
       onCancel();
@@ -72,6 +75,7 @@ export function SOWSectionBlock({
   }
 
   async function handleRegenerate() {
+    if (!canEdit) return;
     setIsRegenerating(true);
     const nextContent = await onRegenerate(
       section.section_key,
@@ -101,7 +105,7 @@ export function SOWSectionBlock({
   }
 
   function startEditing() {
-    if (isStreaming) return;
+    if (isStreaming || !canEdit) return;
     setDraft(section.content_markdown);
     onActivate(section.section_key);
   }
@@ -121,7 +125,7 @@ export function SOWSectionBlock({
           ? "border-indigo-300 ring-4 ring-indigo-50 shadow-md"
           : "border-slate-200/80 hover:border-slate-300 hover:shadow-md hover:bg-slate-50/20"
       )}
-      onDoubleClick={startEditing}
+      onDoubleClick={canEdit ? startEditing : undefined}
     >
       {/* Top Banner indicating Streaming */}
       <AnimatePresence>
@@ -160,15 +164,19 @@ export function SOWSectionBlock({
               <CircleDot className="size-3.5 text-indigo-500" aria-hidden="true" />
               Quality index {quality}%
             </span>
-            <span className="text-slate-400">•</span>
+            <span className="text-slate-400">/</span>
             <span className="font-light">
-              {isActive ? "Inline Editing" : "Double-click block to edit"}
+              {isActive
+                ? "Inline Editing"
+                : canEdit
+                  ? "Double-click block to edit"
+                  : "View-only for your role"}
             </span>
           </div>
         </div>
 
         <AnimatePresence mode="wait">
-          {isActive ? (
+          {isActive && canEdit ? (
             <motion.div
               key="editing-actions"
               initial={{ opacity: 0, y: -4 }}
@@ -202,7 +210,7 @@ export function SOWSectionBlock({
                 {isSaving ? "Saving..." : "Save changes"}
               </Button>
             </motion.div>
-          ) : (
+          ) : canEdit ? (
             <motion.div
               key="preview-actions"
               initial={{ opacity: 0, y: -4 }}
@@ -226,7 +234,7 @@ export function SOWSectionBlock({
                 onRegenerate={handleRegenerate}
               />
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
 

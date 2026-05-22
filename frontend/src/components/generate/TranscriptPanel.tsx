@@ -23,6 +23,8 @@ type TranscriptPanelProps = {
   onLoadSample: () => void;
   payload: GeneratePayload;
   onChange: (updates: Partial<GeneratePayload>) => void;
+  canGenerate?: boolean;
+  disabledReason?: string;
 };
 
 export function TranscriptPanel({
@@ -32,6 +34,8 @@ export function TranscriptPanel({
   onLoadSample,
   payload,
   onChange,
+  canGenerate = true,
+  disabledReason,
 }: TranscriptPanelProps) {
   const isReady = payload.transcript.length > 10;
 
@@ -137,7 +141,7 @@ export function TranscriptPanel({
       <div className="mt-2 rounded-xl bg-slate-900 p-4">
         <Button
           className="h-12 w-full bg-sky-500 text-white hover:bg-sky-400 text-base font-semibold shadow-[0_0_20px_rgba(14,165,233,0.3)] transition-all"
-          disabled={!isReady || isGenerating}
+          disabled={!isReady || isGenerating || !canGenerate}
           onClick={() => onGenerate(payload)}
         >
           {isGenerating ? (
@@ -152,6 +156,9 @@ export function TranscriptPanel({
             </>
           )}
         </Button>
+        {!canGenerate && disabledReason ? (
+          <p className="mt-3 text-center text-xs text-slate-300">{disabledReason}</p>
+        ) : null}
       </div>
     </div>
   );

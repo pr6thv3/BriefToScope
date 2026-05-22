@@ -160,6 +160,31 @@ class UsageSummaryResponse(BaseModel):
     sow_generations_used: int
     sow_generations_limit: int
     pdf_exports_used: int
+    pdf_exports_limit: int
     esign_requests_used: int
+    esign_requests_limit: int
     seats_used: int
     seats_limit: int
+    billing_period_start: datetime
+    billing_period_end: datetime
+
+
+class BillingStatusResponse(BaseModel):
+    plan: PlanKey
+    status: str
+    renewal_date: Optional[datetime] = None
+    cancel_at_period_end: bool = False
+    seat_quantity: int
+    usage: UsageSummaryResponse
+    limits: Dict[str, Any]
+    available_actions: List[str]
+
+
+class BillingActionResponse(BaseModel):
+    status: str
+    message: Optional[str] = None
+    checkout_url: Optional[str] = None
+
+
+class ChangePlanRequest(CheckoutRequest):
+    pass

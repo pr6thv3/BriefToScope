@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, FileText, LoaderCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useAppAuth } from "@/components/auth/AppAuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignatureModal } from "@/components/sow-editor/SignatureModal";
 import { SOWSectionBlock } from "@/components/sow-editor/SOWSectionBlock";
@@ -21,6 +22,7 @@ import {
   sendSOWSignature,
   updateSOW,
 } from "@/lib/api/sows";
+import { useApiAuth } from "@/lib/use-api-client";
 import {
   fallbackEditorSow,
   fallbackRisks,
@@ -39,6 +41,8 @@ type SOWEditorPageProps = {
 };
 
 export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
+  const auth = useAppAuth();
+  const apiAuth = useApiAuth();
   const [sow, setSow] = useState<SOWDetail>(() => buildDemoSow(sowId));
   const [sections, setSections] = useState<SOWSection[]>(() =>
     cloneSections(fallbackSowSections)
@@ -62,6 +66,9 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       summary: "Initial AI-generated SOW with risk review and export readiness.",
     },
   ]);
+  const canEdit = auth.can("sow:edit");
+  const canExport = auth.can("sow:export");
+  const canSendSignature = auth.can("sow:esign");
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +89,10 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       }
 
       try {
-        const response = await getSOW(sowId);
+        const response = await getSOW(sowId, {
+          token: apiAuth.getToken,
+          workspaceId: apiAuth.workspaceId,
+        });
         if (cancelled) {
           return;
         }
@@ -98,14 +108,11 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
           loadError instanceof Error
             ? loadError.message
             : "Backend unavailable";
-        const demoSow = buildDemoSow(sowId);
-        setSow(demoSow);
-        setSections(contentToSections(demoSow.content_json));
-        setIsDemoMode(true);
+        setIsDemoMode(false);
+        setSections([]);
         setError(message);
-        toast.warning("Demo SOW loaded", {
-          description:
-            "The backend was unavailable, so the editor is using reliable demo data.",
+        toast.error("SOW unavailable", {
+          description: message,
         });
       } finally {
         if (!cancelled) {
@@ -119,7 +126,7 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [sowId]);
+  }, [apiAuth.getToken, apiAuth.workspaceId, sowId]);
 
   const documentTitle = useMemo(() => {
     if (sow.client_name && sow.project_name) {
@@ -182,7 +189,14 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
     }
 
     try {
-      const response = await updateSOW(sowId, payload);
+      if (!canEdit) {
+        throw new Error("Your workspace role cannot edit this SOW.");
+      }
+
+      const response = await updateSOW(sowId, payload, {
+        token: apiAuth.getToken,
+        workspaceId: apiAuth.workspaceId,
+      });
       setSow((current) => ({
         ...current,
         content_json: response.content_json,
@@ -218,7 +232,11 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       const response = await regenerateSOWSection(
         sowId,
         sectionKey,
-        currentMarkdown
+        currentMarkdown,
+        {
+          token: apiAuth.getToken,
+          workspaceId: apiAuth.workspaceId,
+        }
       );
       const regenerated = {
         ...response.section,
@@ -239,7 +257,10 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       if (!isDemoMode) {
         setIsSaving(true);
         setSaveStatus("saving");
-        await updateSOW(sowId, payload);
+        await updateSOW(sowId, payload, {
+          token: apiAuth.getToken,
+          workspaceId: apiAuth.workspaceId,
+        });
       }
 
       setSow((current) => ({
@@ -268,51 +289,50 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
   }
 
   async function handleExportPDF() {
+    if (!canExport) {
+      toast.error("Export unavailable", {
+        description: "Your workspace role cannot export PDFs.",
+      });
+      return;
+    }
+
     setIsExporting(true);
     const toastId = toast.loading("Assembling document blocks...", {
       description: "Compiling markdown structure and formatting tables.",
     });
 
     try {
-      if (isDemoMode) {
-        await delay(1200);
-        toast.dismiss(toastId);
-        toast.success("PDF Generated Successfully", {
-          description: "Demo Brand Identity + Webflow Website SOW is ready.",
-          action: {
-            label: "Open PDF",
-            onClick: () => {
-              window.open("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", "_blank", "noopener,noreferrer");
-            }
-          }
+      const response = await exportSOWPDF(sowId, {
+        token: apiAuth.getToken,
+        workspaceId: apiAuth.workspaceId,
+      });
+      setSow((current) => ({ ...current, pdf_url: response.download_url ?? response.pdf_url }));
+      toast.dismiss(toastId);
+      if (response.status === "queued") {
+        toast.success("PDF export queued", {
+          description: "The worker is generating a private PDF export. Refresh the document shortly for the signed download link.",
         });
         return;
       }
-
-      const response = await exportSOWPDF(sowId);
-      setSow((current) => ({ ...current, pdf_url: response.pdf_url }));
-      toast.dismiss(toastId);
       toast.success("PDF Generated Successfully", {
         description: "The SOW PDF is ready for client review.",
         action: {
           label: "View PDF",
           onClick: () => {
-            if (response.pdf_url) {
-              window.open(response.pdf_url, "_blank", "noopener,noreferrer");
+            const url = response.download_url ?? response.pdf_url;
+            if (url) {
+              window.open(url, "_blank", "noopener,noreferrer");
             }
           }
         }
       });
-    } catch {
+    } catch (exportError) {
       toast.dismiss(toastId);
-      toast.success("PDF Generated (Fallback Mode)", {
-        description: "The SOW PDF was successfully compiled using local fallback layout.",
-        action: {
-          label: "Open PDF",
-          onClick: () => {
-            window.open("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", "_blank", "noopener,noreferrer");
-          }
-        }
+      toast.error("PDF export failed", {
+        description:
+          exportError instanceof Error
+            ? exportError.message
+            : "Could not generate a signed private PDF URL.",
       });
     } finally {
       setIsExporting(false);
@@ -320,31 +340,24 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
   }
 
   async function handleSendSignature(recipientEmail: string) {
+    if (!canSendSignature) {
+      toast.error("Signature sending unavailable", {
+        description: "Your workspace role cannot send e-signature requests.",
+      });
+      return;
+    }
+
     setIsSendingSignature(true);
     const toastId = toast.loading("Assembling contract package...", {
       description: "Preparing envelope meta-data and signature anchors.",
     });
 
     try {
-      if (isDemoMode) {
-        await delay(1200);
-        setSow((current) => ({ ...current, esign_status: "sent" }));
-        toast.dismiss(toastId);
-        toast.success("Envelope Dispatched Successfully", {
-          description: `Invitation sent to ${recipientEmail} for signature.`,
-          action: {
-            label: "Sign Document",
-            onClick: () => {
-              window.open("https://demo.docusign.net", "_blank", "noopener,noreferrer");
-            }
-          }
-        });
-        setSignatureOpen(false);
-        return;
-      }
-
       const response = await sendSOWSignature(sowId, {
         recipient_email: recipientEmail,
+      }, {
+        token: apiAuth.getToken,
+        workspaceId: apiAuth.workspaceId,
       });
       setSow((current) => ({ ...current, esign_status: response.status }));
       toast.dismiss(toastId);
@@ -358,17 +371,13 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
         } : undefined
       });
       setSignatureOpen(false);
-    } catch {
-      setSow((current) => ({ ...current, esign_status: "sent" }));
+    } catch (signatureError) {
       toast.dismiss(toastId);
-      toast.success("Envelope Sent (Demo Mode)", {
-        description: `DocuSign not configured. Demo-mode signing envelope sent to ${recipientEmail}.`,
-        action: {
-          label: "Sign Document",
-          onClick: () => {
-            window.open("https://demo.docusign.net", "_blank", "noopener,noreferrer");
-          }
-        }
+      toast.error("Signature request failed", {
+        description:
+          signatureError instanceof Error
+            ? signatureError.message
+            : `Could not send signature request to ${recipientEmail}.`,
       });
       setSignatureOpen(false);
     } finally {
@@ -407,6 +416,8 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
         lastEditedAt={sow.updated_at}
         isExporting={isExporting}
         isSendingSignature={isSendingSignature}
+        canExport={canExport}
+        canSendSignature={canSendSignature}
         onExport={handleExportPDF}
         onOpenSignature={() => setSignatureOpen(true)}
         onOpenVersions={() => setVersionsOpen(true)}
@@ -421,10 +432,10 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-semibold text-rose-950">
-                  Fast-Track Fallback Enabled (Backend Offline)
+                  SOW unavailable
                 </h4>
                 <p className="mt-1 text-xs text-rose-700 leading-normal font-light">
-                  We couldn&apos;t connect to the local FastAPI backend, so we automatically loaded a sandbox demo. Error: {error}.
+                  The backend rejected or could not load this document. Error: {error}.
                 </p>
               </div>
             </div>
@@ -438,7 +449,7 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
                   Demo Workspace Active
                 </h4>
                 <p className="mt-1 text-xs text-indigo-700 leading-normal font-light">
-                  The workspace is running in Demo Mode with mock persistence. All edits, e-sign handoffs, and PDF downloads will use mock data.
+                  This demo document is session-local. Production documents use workspace permissions and private signed PDF downloads.
                 </p>
               </div>
             </div>
@@ -482,6 +493,7 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
                 section={section}
                 isActive={activeSection === section.section_key}
                 isSaving={isSaving}
+                canEdit={canEdit}
                 onActivate={setActiveSection}
                 onCancel={() => setActiveSection(null)}
                 onSave={handleSaveSection}

@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { GeneratePayload, TranscriptPanel } from "./TranscriptPanel";
 import { LiveGenerationCanvas } from "./LiveGenerationCanvas";
-import { api } from "@/lib/api";
+import { useAppAuth } from "@/components/auth/AppAuthProvider";
+import { useApiClient } from "@/lib/use-api-client";
 import { sampleTranscript, industries, tones } from "@/lib/demo";
-import type { GenerateSOWResponse, GenerationStep } from "@/lib/types";
+import { contentToSections } from "@/lib/sow";
+import type { GenerateSOWResponse, GenerationStep, SOWDetail } from "@/lib/types";
 
 const INITIAL_STEPS: GenerationStep[] = [
   { id: "s1", label: "Analyzing transcript", description: "Cleaning messy notes and identifying project signals.", status: "waiting", icon: "" },
@@ -18,6 +20,8 @@ const INITIAL_STEPS: GenerationStep[] = [
 ];
 
 export function GenerateWorkspace() {
+  const api = useApiClient();
+  const auth = useAppAuth();
   const [payload, setPayload] = useState<GeneratePayload>({
     transcript: "",
     industry: industries[0],
@@ -43,6 +47,12 @@ export function GenerateWorkspace() {
   }, []);
 
   const handleGenerate = async (submitPayload: GeneratePayload) => {
+    if (!auth.can("sow:generate")) {
+      setStatus("error");
+      setErrorMsg("Your workspace role cannot generate SOWs.");
+      return;
+    }
+
     setStatus("generating");
     setResult(null);
     setErrorMsg(null);
@@ -80,7 +90,7 @@ export function GenerateWorkspace() {
     }, 1500);
 
     try {
-      const response = await api.generateSow({
+      const generationPayload = {
         transcript_text: submitPayload.transcript,
         industry: submitPayload.industry,
         tone: submitPayload.tone,
@@ -88,7 +98,19 @@ export function GenerateWorkspace() {
         project_name: submitPayload.projectName,
         budget: submitPayload.budget,
         timeline: submitPayload.timeline,
-      });
+      };
+      const job = (await api.createGeneration(generationPayload)) as {
+        id: string;
+        status: string;
+        sow_id?: string;
+        error?: string;
+      };
+      const completedJob = await waitForGeneration(job.id);
+      if (!completedJob.sow_id) {
+        throw new Error("Generation completed without a SOW id.");
+      }
+      const sow = (await api.getSow(completedJob.sow_id)) as SOWDetail;
+      const response = buildGenerationResult(completedJob.sow_id, sow, submitPayload);
 
       // Clear interval and force all to complete
       if (timerRef.current) window.clearInterval(timerRef.current);
@@ -110,6 +132,27 @@ export function GenerateWorkspace() {
       setStatus("error");
     }
   };
+
+  async function waitForGeneration(generationId: string) {
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      const job = (await api.getGeneration(generationId)) as {
+        id: string;
+        status: string;
+        progress?: number;
+        current_step?: string;
+        sow_id?: string;
+        error?: string;
+      };
+      if (job.status === "completed") {
+        return job;
+      }
+      if (job.status === "failed") {
+        throw new Error(job.error || "Generation job failed.");
+      }
+      await delay(1000);
+    }
+    throw new Error("Generation timed out.");
+  }
 
   const loadSample = () => {
     setPayload({
@@ -151,6 +194,11 @@ export function GenerateWorkspace() {
             onLoadSample={loadSample}
             payload={payload}
             onChange={(updates) => setPayload(p => ({ ...p, ...updates }))}
+            canGenerate={auth.can("sow:generate")}
+            disabledReason={
+              auth.syncError ??
+              "Your workspace role can review SOWs but cannot generate new documents."
+            }
           />
         </div>
         <div className="order-1 lg:order-2">
@@ -165,4 +213,60 @@ export function GenerateWorkspace() {
       </div>
     </div>
   );
+}
+
+function buildGenerationResult(
+  sowId: string,
+  sow: SOWDetail,
+  payload: GeneratePayload
+): GenerateSOWResponse {
+  const sections = contentToSections(sow.content_json);
+  return {
+    success: true,
+    project_id: "",
+    transcript_id: "",
+    sow_id: sowId,
+    status: "generated",
+    ai_pipeline: {},
+    sow: {
+      title: sow.title,
+      content_json: sow.content_json as GenerateSOWResponse["sow"]["content_json"],
+      content_markdown: sow.content_markdown,
+      sections: sections.map((section) => ({
+        key: section.section_key,
+        title: section.section_title,
+        content: section.content_markdown,
+        order: section.order,
+      })),
+    },
+    extracted_brief: {
+      client_name: sow.client_name || payload.clientName,
+      project_type: sow.project_name || payload.projectName,
+      goals: [],
+      deliverables: sections
+        .filter((section) => section.section_key === "deliverables")
+        .flatMap((section) => section.content_markdown.split("\n").filter(Boolean)),
+      budget_mentions: payload.budget ? [payload.budget] : [],
+      deadline_mentions: payload.timeline ? [payload.timeline] : [],
+      unclear_items: [],
+    },
+    confidence_score: sow.confidence_score,
+    risk_flags: sow.risk_flags ?? sow.risk_flags_json ?? [],
+    quality: {
+      overall_quality_score: sow.quality_score ?? 80,
+      approval_status: "approved_with_warnings",
+      ready_for_export: true,
+      warnings: [],
+    },
+    metadata: {
+      generation_time_ms: 0,
+      demo_mode: false,
+      model_used: "worker",
+      fallback_used: false,
+    },
+  };
+}
+
+function delay(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }

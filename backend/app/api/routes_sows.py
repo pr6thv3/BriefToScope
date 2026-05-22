@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, require_permission
 from app.models.schemas import (
     SOWListItem, SOWDetailResponse, UpdateSOWRequest, UpdateSOWResponse
 )
@@ -14,13 +14,10 @@ router = APIRouter()
 
 @router.get("/sows", response_model=List[SOWListItem])
 @router.get("/api/sows", response_model=List[SOWListItem])
-async def list_sows(current_user: dict = Depends(get_current_user)):
+async def list_sows(context: RequestContext = Depends(require_permission("sow:view"))):
     try:
         storage = StorageService()
-        user = await storage.get_user_by_clerk_id(current_user["sub"])
-        if not user:
-            return []
-        sows = await storage.get_sows_by_user(user["id"])
+        sows = await storage.get_sows_by_org(context.org_id)
         result = []
         for s in sows:
             project = await _get_project(storage, s.get("project_id"))
@@ -43,14 +40,13 @@ async def list_sows(current_user: dict = Depends(get_current_user)):
 
 @router.get("/sows/{sow_id}", response_model=SOWDetailResponse)
 @router.get("/api/sows/{sow_id}", response_model=SOWDetailResponse)
-async def get_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
+async def get_sow(sow_id: str, context: RequestContext = Depends(require_permission("sow:view"))):
     try:
         storage = StorageService()
         sow = await storage.get_sow_by_id(sow_id)
         if not sow:
             raise NotFoundError("SOW not found")
-        user = await storage.get_user_by_clerk_id(current_user["sub"])
-        if user and sow.get("user_id") != user.get("id"):
+        if not _sow_belongs_to_workspace(sow, context):
             raise BriefToScopeError("Not authorized to view this SOW", 403)
         project = await _get_project(storage, sow.get("project_id"))
         esign = await _get_esign(storage, sow_id)
@@ -64,12 +60,14 @@ async def get_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
             content_json=sow.get("content_json", {}),
             content_markdown=sow.get("content_markdown", ""),
             risk_flags_json=sow.get("risk_flags_json", []),
+            quality_score=sow.get("quality_score"),
+            risk_score=sow.get("risk_score"),
             confidence_score=sow.get("confidence_score", 0.0),
-            pdf_url=sow.get("pdf_url"),
+            pdf_url=None,
             created_at=sow["created_at"],
             updated_at=sow["updated_at"],
             transcript_summary=sow.get("content_json", {}).get("project_overview", ""),
-            export_status="ready" if sow.get("pdf_url") else "pending",
+            export_status="ready" if sow.get("status") == "exported" else "pending",
             esign_status=esign.get("status") if esign else None,
         )
     except BriefToScopeError as e:
@@ -84,15 +82,14 @@ async def get_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
 async def update_sow(
     sow_id: str,
     req: UpdateSOWRequest,
-    current_user: dict = Depends(get_current_user),
+    context: RequestContext = Depends(require_permission("sow:edit")),
 ):
     try:
         storage = StorageService()
         sow = await storage.get_sow_by_id(sow_id)
         if not sow:
             raise NotFoundError("SOW not found")
-        user = await storage.get_user_by_clerk_id(current_user["sub"])
-        if user and sow.get("user_id") != user.get("id"):
+        if not _sow_belongs_to_workspace(sow, context):
             raise BriefToScopeError("Not authorized to update this SOW", 403)
 
         versions = await storage.get_sow_versions(sow_id)
@@ -126,6 +123,12 @@ async def _get_project(storage: StorageService, project_id: str):
         return resp.data
     except Exception:
         return None
+
+
+def _sow_belongs_to_workspace(sow: dict, context: RequestContext) -> bool:
+    if sow.get("org_id"):
+        return sow.get("org_id") == context.org_id
+    return sow.get("user_id") == context.user_id
 
 
 async def _get_esign(storage: StorageService, sow_id: str):

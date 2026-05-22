@@ -2,13 +2,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from app.dependencies import RequestContext
 from app.models.production_schemas import GenerationCreateRequest
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_validation_service import AIValidationService
 from app.services.audit_log_service import AuditLogService
-from app.services.auth_service import AuthService
 from app.services.storage_service import StorageService
 from app.services.usage_service import UsageService
-from app.services.workspace_service import WorkspaceService
 from app.utils.security import sanitize_transcript, validate_transcript_length
 
 
@@ -27,19 +27,19 @@ class GenerationJobService:
 
     def __init__(self):
         self.storage = StorageService()
-        self.workspace_service = WorkspaceService()
 
-    async def create_job(self, payload: GenerationCreateRequest, current_user: dict, org_id: Optional[str] = None) -> dict:
-        auth_service = AuthService()
-        user = await auth_service.get_or_create_user(current_user["sub"], current_user.get("email", ""), "")
-        workspace = await self.workspace_service.ensure_default_workspace(user)
-        active_org_id = org_id or workspace["id"]
-        await self.workspace_service.require_membership(user["id"], active_org_id)
+    async def create_job(self, payload: GenerationCreateRequest, context: RequestContext) -> dict:
+        await UsageService().assert_quota_available(
+            context.org_id,
+            context.plan,
+            context.subscription_status,
+            "sow_generated",
+        )
 
         job = {
             "id": str(uuid.uuid4()),
-            "org_id": active_org_id,
-            "user_id": user["id"],
+            "org_id": context.org_id,
+            "user_id": context.user_id,
             "status": "queued",
             "current_step": "queued",
             "progress": 0,
@@ -119,19 +119,30 @@ class GenerationJobService:
                 status_callback=status_callback,
             )
 
+            sow_content_json = output.sow.model_dump()
+            validation = AIValidationService().validate_sow(sow_content_json)
+            merged_risk_flags = [risk.model_dump() for risk in output.risk_flags] + validation["risk_flags"]
             markdown = _to_markdown(output.sow, output.extracted_brief.client_name or payload.client_name)
             sow = await self.storage.create_sow(
                 project_id=project["id"],
                 user_id=job["user_id"],
                 org_id=job["org_id"],
                 title=payload.project_name or output.extracted_brief.project_type or "Untitled SOW",
-                content_json=output.sow.model_dump(),
+                content_json=sow_content_json,
                 content_markdown=markdown,
-                risk_flags=[risk.model_dump() for risk in output.risk_flags],
-                confidence_score=output.confidence_score,
+                risk_flags=merged_risk_flags,
+                confidence_score=validation["confidence_score"],
+                quality_score=validation["quality_score"],
+                risk_score=validation["risk_score"],
             )
             await self.storage.update_project_status(project["id"], "completed")
-            await UsageService().track_event(job["user_id"], "sow_generated", token_count=len(raw.split()))
+            await UsageService().track_event(
+                job["org_id"],
+                job["user_id"],
+                "sow_generated",
+                token_count=len(raw.split()),
+                metadata={"sow_id": sow["id"], "generation_job_id": job_id},
+            )
             await AuditLogService().record(
                 org_id=job["org_id"],
                 actor_id=job["user_id"],

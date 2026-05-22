@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, require_permission
 from app.models.production_schemas import (
     RiskAuditResponse,
     SectionRegenerateRequest,
@@ -9,21 +9,20 @@ from app.models.production_schemas import (
     SOWSectionUpdateRequest,
 )
 from app.services.audit_log_service import AuditLogService
-from app.services.auth_service import AuthService
 from app.services.sow_service import SOWService
+from app.services.storage_service import StorageService
 from app.utils.errors import BriefToScopeError
 
 router = APIRouter(prefix="/api/sows", tags=["SOW Sections"])
 
 
-async def _user_id(current_user: dict) -> str:
-    user = await AuthService().get_or_create_user(current_user["sub"], current_user.get("email", ""), "")
-    return user["id"]
-
-
 @router.get("/{sow_id}/sections", response_model=list[SOWSectionResponse])
-async def list_sow_sections(sow_id: str, current_user: dict = Depends(get_current_user)):
+async def list_sow_sections(
+    sow_id: str,
+    context: RequestContext = Depends(require_permission("sow:view")),
+):
     try:
+        await _require_sow_in_workspace(sow_id, context)
         return await SOWService().list_sections(sow_id)
     except BriefToScopeError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
@@ -34,14 +33,14 @@ async def update_sow_section(
     sow_id: str,
     section_key: str,
     req: SOWSectionUpdateRequest,
-    current_user: dict = Depends(get_current_user),
+    context: RequestContext = Depends(require_permission("sow:edit")),
 ):
     try:
-        user_id = await _user_id(current_user)
+        await _require_sow_in_workspace(sow_id, context)
         section = await SOWService().update_section(sow_id, section_key, req.content_markdown, req.change_summary)
         await AuditLogService().record(
-            org_id="",
-            actor_id=user_id,
+            org_id=context.org_id,
+            actor_id=context.user_id,
             action="sow.section.updated",
             entity_type="sow_section",
             entity_id=section["id"],
@@ -56,9 +55,10 @@ async def update_sow_section(
 async def regenerate_sow_section(
     sow_id: str,
     req: SectionRegenerateRequest,
-    current_user: dict = Depends(get_current_user),
+    context: RequestContext = Depends(require_permission("sow:edit")),
 ):
     try:
+        await _require_sow_in_workspace(sow_id, context)
         section = await SOWService().regenerate_section(
             sow_id,
             req.section_key,
@@ -76,9 +76,26 @@ async def regenerate_sow_section(
 
 
 @router.post("/{sow_id}/risk-audit", response_model=RiskAuditResponse)
-async def risk_audit_sow(sow_id: str, current_user: dict = Depends(get_current_user)):
+async def risk_audit_sow(
+    sow_id: str,
+    context: RequestContext = Depends(require_permission("sow:risk_audit")),
+):
     try:
+        await _require_sow_in_workspace(sow_id, context)
         return await SOWService().audit_risks(sow_id)
     except BriefToScopeError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+async def _require_sow_in_workspace(sow_id: str, context: RequestContext) -> dict:
+    sow = await StorageService().get_sow_by_id(sow_id)
+    if not sow:
+        from app.utils.errors import NotFoundError
+
+        raise NotFoundError("SOW not found")
+    if sow.get("org_id") and sow.get("org_id") != context.org_id:
+        raise BriefToScopeError("Not authorized for this SOW", 403)
+    if not sow.get("org_id") and sow.get("user_id") != context.user_id:
+        raise BriefToScopeError("Not authorized for this SOW", 403)
+    return sow
 

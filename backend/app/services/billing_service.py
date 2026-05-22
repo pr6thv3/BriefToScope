@@ -22,6 +22,8 @@ PLAN_LIMITS: Dict[str, dict] = {
         "name": "Free",
         "price_monthly": 0,
         "included_sows": 3,
+        "included_pdf_exports": 3,
+        "included_esign_requests": 0,
         "included_seats": 1,
         "pdf_export": True,
         "esign": False,
@@ -32,6 +34,8 @@ PLAN_LIMITS: Dict[str, dict] = {
         "name": "Solo",
         "price_monthly": 29,
         "included_sows": 30,
+        "included_pdf_exports": 30,
+        "included_esign_requests": 0,
         "included_seats": 1,
         "pdf_export": True,
         "esign": False,
@@ -42,6 +46,8 @@ PLAN_LIMITS: Dict[str, dict] = {
         "name": "Studio",
         "price_monthly": 79,
         "included_sows": 100,
+        "included_pdf_exports": 100,
+        "included_esign_requests": 25,
         "included_seats": 5,
         "pdf_export": True,
         "esign": True,
@@ -52,6 +58,8 @@ PLAN_LIMITS: Dict[str, dict] = {
         "name": "Agency",
         "price_monthly": 199,
         "included_sows": 300,
+        "included_pdf_exports": 300,
+        "included_esign_requests": 100,
         "included_seats": 15,
         "pdf_export": True,
         "esign": True,
@@ -62,6 +70,8 @@ PLAN_LIMITS: Dict[str, dict] = {
         "name": "Enterprise",
         "price_monthly": 0,
         "included_sows": 999999,
+        "included_pdf_exports": 999999,
+        "included_esign_requests": 999999,
         "included_seats": 999999,
         "pdf_export": True,
         "esign": True,
@@ -97,16 +107,25 @@ class BillingService:
     async def get_usage_summary(self, org_id: str, user_id: str, plan: str = "free") -> dict:
         subscription = await self.storage.get_billing_subscription(org_id)
         active_plan = subscription.get("plan", plan) if subscription else plan
+        from app.services.usage_service import UsageService
+
+        return await UsageService().get_usage_summary(org_id, active_plan)
+
+    async def get_billing_status(self, org_id: str, plan: str = "free") -> dict:
+        subscription = await self.storage.get_billing_subscription(org_id) or {}
+        active_plan = subscription.get("plan") or plan
         limits = PLAN_LIMITS.get(active_plan, PLAN_LIMITS["free"])
+        usage = await self.get_usage_summary(org_id, "", active_plan)
+        status = subscription.get("status") or "active"
         return {
-            "org_id": org_id,
             "plan": active_plan,
-            "sow_generations_used": 0,
-            "sow_generations_limit": limits["included_sows"],
-            "pdf_exports_used": 0,
-            "esign_requests_used": 0,
-            "seats_used": 1,
-            "seats_limit": limits["included_seats"],
+            "status": status,
+            "renewal_date": subscription.get("current_period_end") or subscription.get("updated_at"),
+            "cancel_at_period_end": bool(subscription.get("cancel_at_period_end", False)),
+            "seat_quantity": subscription.get("seat_quantity") or limits["included_seats"],
+            "usage": usage,
+            "limits": limits,
+            "available_actions": self._available_actions(active_plan, status),
         }
 
     async def create_checkout_session(self, org_id: str, plan: str, success_url: str, cancel_url: str) -> dict:
@@ -166,6 +185,61 @@ class BillingService:
             "demo_mode": False,
         }
 
+    async def change_plan(self, org_id: str, plan: str, success_url: str, cancel_url: str) -> dict:
+        return await self.create_checkout_session(org_id, plan, success_url, cancel_url)
+
+    async def cancel_subscription(self, org_id: str) -> dict:
+        subscription = await self.storage.get_billing_subscription(org_id)
+        if not subscription or not subscription.get("paypal_subscription_id"):
+            return {"status": "no_subscription", "message": "No active PayPal subscription is attached."}
+
+        if self.settings.demo_mode or not self.settings.paypal_client_id:
+            subscription["status"] = "canceled"
+            subscription["cancel_at_period_end"] = True
+            await self.storage.upsert_billing_subscription(subscription)
+            await self.storage.update_organization_plan(org_id, "free", "active")
+            return {"status": "canceled", "message": "Subscription canceled."}
+
+        access_token = await self._get_access_token()
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.post(
+                f"{self._base_url()}/v1/billing/subscriptions/{subscription['paypal_subscription_id']}/cancel",
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                json={"reason": "Customer requested cancellation from BriefToScope billing settings."},
+            )
+            resp.raise_for_status()
+        subscription["status"] = "canceled"
+        subscription["cancel_at_period_end"] = True
+        await self.storage.upsert_billing_subscription(subscription)
+        await self.storage.update_organization_plan(org_id, "free", "active")
+        return {"status": "canceled", "message": "Subscription canceled."}
+
+    async def reactivate_subscription(self, org_id: str) -> dict:
+        subscription = await self.storage.get_billing_subscription(org_id)
+        if not subscription or not subscription.get("paypal_subscription_id"):
+            return {"status": "no_subscription", "message": "No PayPal subscription is attached."}
+
+        if self.settings.demo_mode or not self.settings.paypal_client_id:
+            subscription["status"] = "active"
+            subscription["cancel_at_period_end"] = False
+            await self.storage.upsert_billing_subscription(subscription)
+            await self.storage.update_organization_plan(org_id, subscription.get("plan", "free"), "active")
+            return {"status": "active", "message": "Subscription reactivated."}
+
+        access_token = await self._get_access_token()
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.post(
+                f"{self._base_url()}/v1/billing/subscriptions/{subscription['paypal_subscription_id']}/activate",
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                json={"reason": "Customer requested reactivation from BriefToScope billing settings."},
+            )
+            resp.raise_for_status()
+        subscription["status"] = "active"
+        subscription["cancel_at_period_end"] = False
+        await self.storage.upsert_billing_subscription(subscription)
+        await self.storage.update_organization_plan(org_id, subscription.get("plan", "free"), "active")
+        return {"status": "active", "message": "Subscription reactivated."}
+
     async def handle_paypal_webhook(self, event: dict, headers: dict, raw_body: bytes) -> dict:
         if not self.settings.demo_mode:
             await self._verify_paypal_webhook(headers, raw_body)
@@ -195,6 +269,14 @@ class BillingService:
 
             raise BriefToScopeError("PDF export is not available on this plan", 402)
 
+    def _available_actions(self, plan: str, status: str) -> list[str]:
+        actions = ["upgrade"]
+        if plan != "free":
+            actions.extend(["change_plan", "cancel"])
+        if status in {"canceled", "suspended", "past_due"}:
+            actions.append("reactivate")
+        return actions
+
     async def _reconcile_paypal_event(self, event: dict) -> dict:
         event_type = event.get("event_type", "")
         resource = event.get("resource", {}) or {}
@@ -202,10 +284,42 @@ class BillingService:
         if event_type.startswith("BILLING.SUBSCRIPTION."):
             return await self._sync_subscription_event(event_type, resource)
 
-        if event_type in {"PAYMENT.SALE.COMPLETED", "PAYMENT.SALE.REFUNDED", "PAYMENT.SALE.REVERSED"}:
-            return {"event_type": event_type, "billing_event": "payment_recorded"}
+        if event_type in {
+            "PAYMENT.SALE.COMPLETED",
+            "PAYMENT.SALE.DENIED",
+            "PAYMENT.SALE.REFUNDED",
+            "PAYMENT.SALE.REVERSED",
+        }:
+            return await self._sync_payment_event(event_type, resource)
 
         return {"event_type": event_type, "billing_event": "ignored"}
+
+    async def _sync_payment_event(self, event_type: str, resource: dict) -> dict:
+        subscription_id = resource.get("billing_agreement_id") or resource.get("subscription_id")
+        if not subscription_id:
+            return {"event_type": event_type, "billing_event": "payment_recorded"}
+
+        subscription = await self.storage.get_billing_subscription_by_paypal_id(subscription_id)
+        if not subscription:
+            return {"event_type": event_type, "billing_event": "subscription_not_found"}
+
+        if event_type == "PAYMENT.SALE.COMPLETED":
+            subscription["status"] = "active"
+            org_status = "active"
+        elif event_type in {"PAYMENT.SALE.DENIED", "PAYMENT.SALE.REVERSED"}:
+            subscription["status"] = "past_due"
+            org_status = "past_due"
+        else:
+            subscription["status"] = "suspended"
+            org_status = "past_due"
+
+        await self.storage.upsert_billing_subscription(subscription)
+        await self.storage.update_organization_plan(
+            subscription["org_id"],
+            subscription.get("plan", "free") if subscription["status"] == "active" else "free",
+            org_status,
+        )
+        return {"event_type": event_type, "billing_event": "payment_synced", "subscription_id": subscription_id}
 
     async def _sync_subscription_event(self, event_type: str, resource: dict) -> dict:
         subscription_id = resource.get("id") or resource.get("billing_agreement_id")

@@ -171,8 +171,10 @@ CREATE TABLE IF NOT EXISTS pdf_exports (
     signed_url_expires_at TIMESTAMP WITH TIME ZONE,
     status VARCHAR(50) DEFAULT 'ready' NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     CONSTRAINT chk_pdf_export_status CHECK (status IN ('queued', 'generating', 'ready', 'failed'))
 );
+ALTER TABLE pdf_exports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS billing_customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -251,6 +253,12 @@ CREATE TABLE IF NOT EXISTS generation_jobs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     CONSTRAINT chk_generation_job_status CHECK (status IN ('queued', 'running', 'completed', 'failed'))
 );
+
+ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1 NOT NULL;
+ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS tokens INTEGER DEFAULT 0 NOT NULL;
+ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS cost NUMERIC(12, 6) DEFAULT 0.000000 NOT NULL;
+ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS billing_period_start TIMESTAMP WITH TIME ZONE;
+ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS billing_period_end TIMESTAMP WITH TIME ZONE;
 
 CREATE TABLE IF NOT EXISTS generation_job_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

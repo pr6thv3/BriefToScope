@@ -277,8 +277,8 @@ class TestExportAndUpload:
     async def test_export_returns_enriched_result(self, sample_sow):
         service = PDFService()
         service.storage = MagicMock(spec=StorageService)
-        service.storage.upload_pdf = AsyncMock(return_value="https://demo.storage/test.pdf")
-        service.storage.update_sow_pdf_url = AsyncMock()
+        service.storage.upload_pdf_private = AsyncMock(return_value="organizations/org-1/sows/test-sow-001/test.pdf")
+        service.storage.create_pdf_export = AsyncMock(return_value={"id": "export-1", "status": "ready"})
         service.storage.update_sow_status = AsyncMock()
 
         result = await service.export_and_upload(
@@ -299,22 +299,22 @@ class TestExportAndUpload:
     async def test_export_calls_upload(self, sample_sow):
         service = PDFService()
         service.storage = MagicMock(spec=StorageService)
-        service.storage.upload_pdf = AsyncMock(return_value="https://demo.storage/test.pdf")
-        service.storage.update_sow_pdf_url = AsyncMock()
+        service.storage.upload_pdf_private = AsyncMock(return_value="organizations/org-1/sows/test-sow-001/test.pdf")
+        service.storage.create_pdf_export = AsyncMock(return_value={"id": "export-1", "status": "ready"})
         service.storage.update_sow_status = AsyncMock()
 
         await service.export_and_upload(sow=sample_sow)
 
-        service.storage.upload_pdf.assert_called_once()
-        service.storage.update_sow_pdf_url.assert_called_once_with("test-sow-001", "https://demo.storage/test.pdf")
+        service.storage.upload_pdf_private.assert_called_once()
+        service.storage.create_pdf_export.assert_called_once()
         service.storage.update_sow_status.assert_called_once_with("test-sow-001", "exported")
 
     @pytest.mark.asyncio
     async def test_export_survives_status_update_failure(self, sample_sow):
         service = PDFService()
         service.storage = MagicMock(spec=StorageService)
-        service.storage.upload_pdf = AsyncMock(return_value="https://demo.storage/test.pdf")
-        service.storage.update_sow_pdf_url = AsyncMock()
+        service.storage.upload_pdf_private = AsyncMock(return_value="organizations/org-1/sows/test-sow-001/test.pdf")
+        service.storage.create_pdf_export = AsyncMock(return_value={"id": "export-1", "status": "ready"})
         service.storage.update_sow_status = AsyncMock(side_effect=Exception("DB down"))
 
         result = await service.export_and_upload(sow=sample_sow)
@@ -322,29 +322,28 @@ class TestExportAndUpload:
 
     @pytest.mark.asyncio
     async def test_export_survives_pdf_url_update_failure(self, sample_sow):
-        """Pipeline should succeed even if pdf_url update fails."""
+        """Pipeline should succeed because private export records replace pdf_url writes."""
         service = PDFService()
         service.storage = MagicMock(spec=StorageService)
-        service.storage.upload_pdf = AsyncMock(return_value="https://demo.storage/test.pdf")
-        service.storage.update_sow_pdf_url = AsyncMock(side_effect=Exception("DB timeout"))
+        service.storage.upload_pdf_private = AsyncMock(return_value="organizations/org-1/sows/test-sow-001/test.pdf")
+        service.storage.create_pdf_export = AsyncMock(return_value={"id": "export-1", "status": "ready"})
         service.storage.update_sow_status = AsyncMock()
 
         result = await service.export_and_upload(sow=sample_sow)
         assert result["success"] is True
-        assert result["pdf_url"] == "https://demo.storage/test.pdf"
+        assert result["storage_path"] == "organizations/org-1/sows/test-sow-001/test.pdf"
 
     @pytest.mark.asyncio
     async def test_export_survives_upload_failure(self, sample_sow):
-        """Pipeline should succeed with mock URL if storage.upload_pdf raises."""
+        """Pipeline should fail clearly if private storage upload raises."""
         service = PDFService()
         service.storage = MagicMock(spec=StorageService)
-        service.storage.upload_pdf = AsyncMock(side_effect=Exception("Storage down"))
-        service.storage.update_sow_pdf_url = AsyncMock()
+        service.storage.upload_pdf_private = AsyncMock(side_effect=Exception("Storage down"))
+        service.storage.create_pdf_export = AsyncMock()
         service.storage.update_sow_status = AsyncMock()
 
-        result = await service.export_and_upload(sow=sample_sow, user_id="user-1")
-        assert result["success"] is True
-        assert "demo.storage" in result["pdf_url"]
+        with pytest.raises(Exception, match="Storage down"):
+            await service.export_and_upload(sow=sample_sow, user_id="user-1")
 
 
 # =====================================================================
@@ -422,10 +421,9 @@ class TestUsageTracking:
         service.storage = MagicMock(spec=StorageService)
         service.storage.create_usage_event = AsyncMock(return_value={"id": "evt-1"})
 
-        await service.track_event("user-1", "pdf_export", token_count=0)
+        await service.track_event("org-1", "user-1", "pdf_export", token_count=0)
         service.storage.create_usage_event.assert_called_once()
-        call_args = service.storage.create_usage_event.call_args
-        assert call_args[0][1] == "pdf_export"
+        assert service.storage.create_usage_event.call_args.kwargs["event_type"] == "pdf_export"
 
 
 # =====================================================================

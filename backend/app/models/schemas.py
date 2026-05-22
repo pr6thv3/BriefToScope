@@ -88,6 +88,8 @@ class SOWDetailResponse(BaseModel):
     content_json: dict
     content_markdown: str
     risk_flags_json: List[RiskFlag]
+    quality_score: Optional[int] = None
+    risk_score: Optional[int] = None
     confidence_score: float
     pdf_url: Optional[str]
     created_at: datetime
@@ -112,13 +114,17 @@ class UpdateSOWResponse(BaseModel):
 class PDFExportResponse(BaseModel):
     success: bool = Field(default=True, examples=[True])
     sow_id: str = Field(examples=["a1b2c3d4-e5f6-7890-abcd-ef1234567890"])
-    pdf_url: str = Field(examples=["https://storage.example.com/sow-pdfs/xxx/brief-to-scope-sow-xxx.pdf"])
+    export_id: Optional[str] = Field(default=None, examples=["pdf_export_123"])
+    status: str = Field(default="ready", examples=["ready"])
+    pdf_url: Optional[str] = Field(default=None, examples=["https://storage.example.com/signed-url"])
+    download_url: Optional[str] = Field(default=None, examples=["https://storage.example.com/signed-url"])
+    signed_url_expires_at: Optional[datetime] = None
     filename: str = Field(examples=["brief-to-scope-sow-a1b2c3d4.pdf"])
     generated_at: datetime = Field(examples=["2026-05-20T15:00:00"])
 
 
 class ESignResponse(BaseModel):
-    signing_url: str = Field(examples=["https://demo.docusign.net/demo-sign/xxx"])
+    signing_url: str = Field(examples=["https://apps.docusign.com/signing/start?envelopeId=xxx"])
     envelope_id: str = Field(examples=["demo-abc123"])
     status: str = Field(examples=["sent"])
 

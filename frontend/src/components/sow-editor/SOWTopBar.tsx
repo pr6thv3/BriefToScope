@@ -16,6 +16,8 @@ type SOWTopBarProps = {
   lastEditedAt: string;
   isExporting: boolean;
   isSendingSignature: boolean;
+  canExport: boolean;
+  canSendSignature: boolean;
   onExport: () => void;
   onOpenSignature: () => void;
   onOpenVersions: () => void;
@@ -28,6 +30,8 @@ export function SOWTopBar({
   lastEditedAt,
   isExporting,
   isSendingSignature,
+  canExport,
+  canSendSignature,
   onExport,
   onOpenSignature,
   onOpenVersions,
@@ -70,11 +74,15 @@ export function SOWTopBar({
             <History data-icon="inline-start" />
             Versions
           </Button>
-          <ExportPDFButton isExporting={isExporting} onExport={onExport} />
-          <SendSignatureButton
-            disabled={isSendingSignature}
-            onClick={onOpenSignature}
-          />
+          {canExport ? (
+            <ExportPDFButton isExporting={isExporting} onExport={onExport} />
+          ) : null}
+          {canSendSignature ? (
+            <SendSignatureButton
+              disabled={isSendingSignature}
+              onClick={onOpenSignature}
+            />
+          ) : null}
         </div>
       </div>
     </header>

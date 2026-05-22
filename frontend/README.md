@@ -32,8 +32,12 @@ Open `http://localhost:3000`.
 
 ## API Contract
 
-The frontend uses `NEXT_PUBLIC_API_URL` and sends `Authorization: Bearer demo`.
-In backend `DEMO_MODE=true`, auth is mocked and the in-memory storage layer is used.
+The frontend uses `NEXT_PUBLIC_API_URL` plus Clerk sessions. Protected requests send:
+
+- `Authorization: Bearer <Clerk JWT>`
+- `X-Workspace-Id: <active BriefToScope workspace id>`
+
+In local `DEMO_MODE=true`, the backend can still mock auth/storage, but the frontend no longer ships a hard-coded bearer token.
 
 Connected endpoints:
 

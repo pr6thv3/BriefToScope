@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, get_current_user, require_permission
 from app.models.production_schemas import (
     BrandSettingsRequest,
     BrandSettingsResponse,
@@ -11,6 +11,7 @@ from app.models.production_schemas import (
     WorkspaceResponse,
 )
 from app.services.auth_service import AuthService
+from app.services.billing_service import PLAN_LIMITS
 from app.services.workspace_service import WorkspaceService
 from app.utils.errors import BriefToScopeError
 
@@ -47,12 +48,20 @@ async def list_members(org_id: str, current_user: dict = Depends(get_current_use
 
 
 @router.post("/{org_id}/invites", response_model=InviteResponse)
-async def create_invite(org_id: str, req: InviteCreateRequest, current_user: dict = Depends(get_current_user)):
+async def create_invite(
+    org_id: str,
+    req: InviteCreateRequest,
+    context: RequestContext = Depends(require_permission("members:invite")),
+):
     try:
-        user = await _current_user_record(current_user)
+        if context.org_id != org_id:
+            raise BriefToScopeError("Not authorized for this workspace", 403)
         service = WorkspaceService()
-        await service.require_membership(user["id"], org_id, ["owner", "admin"])
-        return await service.create_invite(org_id, req.email, req.role, user["id"])
+        members = await service.list_members(org_id)
+        seat_limit = PLAN_LIMITS.get(context.plan, PLAN_LIMITS["free"])["included_seats"]
+        if len([member for member in members if member.get("status") == "active"]) >= seat_limit:
+            raise BriefToScopeError("Seat limit reached for this plan", 402)
+        return await service.create_invite(org_id, req.email, req.role, context.user_id)
     except BriefToScopeError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 

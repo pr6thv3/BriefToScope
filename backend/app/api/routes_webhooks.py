@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException
+from app.config import get_settings
 from app.services.billing_service import BillingService
 from app.services.esign_service import ESignService
 from app.utils.errors import BriefToScopeError
@@ -9,6 +10,7 @@ router = APIRouter()
 
 
 @router.post("/webhooks/paypal")
+@router.post("/api/webhooks/paypal")
 async def paypal_webhook(request: Request):
     payload = await request.body()
     logger.info(f"PayPal webhook received, payload length: {len(payload)}")

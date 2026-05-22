@@ -1,12 +1,13 @@
 import time
 from fastapi import APIRouter, Depends, HTTPException
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, require_permission
 from app.models.api_schemas import GenerateSOWRequest, GenerateSOWResponse, SowDetails, QualityDetails, GenerationMetadata
 from app.models.schemas import HealthResponse
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_validation_service import AIValidationService
 from app.services.storage_service import StorageService
 from app.services.usage_service import UsageService
-from app.services.auth_service import AuthService
+from app.config import get_settings
 from app.utils.security import sanitize_transcript, validate_transcript_length
 from app.utils.errors import BriefToScopeError
 from app.utils.logger import get_logger
@@ -23,7 +24,7 @@ async def health_check():
 @router.post("/generate-sow", response_model=GenerateSOWResponse)
 async def generate_sow(
     req: GenerateSOWRequest,
-    current_user: dict = Depends(get_current_user),
+    context: RequestContext = Depends(require_permission("sow:generate")),
 ):
     start_time = time.perf_counter()
     orchestrator = None
@@ -31,20 +32,26 @@ async def generate_sow(
     project_id = ""
 
     try:
+        settings = get_settings()
+        if settings.celery_enabled and not settings.demo_mode:
+            raise BriefToScopeError("Use /api/generations for asynchronous production generation", 409)
+
         # 1. Validate
         raw = sanitize_transcript(req.transcript_text)
         err = validate_transcript_length(raw)
         if err:
             raise BriefToScopeError(err, 422)
 
-        logger.info(f"[GENERATE] Request from user={current_user.get('sub')} industry={req.industry} tone={req.tone}")
+        logger.info(f"[GENERATE] Request from user={context.clerk_user_id} org={context.org_id} industry={req.industry} tone={req.tone}")
 
-        # 2. Get or create user
-        auth_service = AuthService()
-        user = await auth_service.get_or_create_user(
-            current_user["sub"], current_user.get("email", ""), ""
+        usage = UsageService()
+        await usage.assert_quota_available(
+            context.org_id,
+            context.plan,
+            context.subscription_status,
+            "sow_generated",
         )
-        user_id = user["id"]
+        user_id = context.user_id
         logger.info(f"[GENERATE] User resolved: {user_id}")
 
         # 3. Create project with status = 'generating'
@@ -54,6 +61,7 @@ async def generate_sow(
             project_name=req.project_name or "Untitled Project",
             industry=req.industry,
             status="generating",
+            org_id=context.org_id,
         )
         project_id = project["id"]
         logger.info(f"[GENERATE] Project created: {project_id} (generating)")
@@ -96,14 +104,21 @@ async def generate_sow(
         sow_title = req.project_name or output.extracted_brief.project_type or "Untitled SOW"
         markdown_content = _to_markdown(output.sow, output.extracted_brief.client_name or req.client_name)
         
+        sow_content_json = output.sow.model_dump()
+        validation = AIValidationService().validate_sow(sow_content_json)
+        merged_risk_flags = [r.model_dump() for r in output.risk_flags] + validation["risk_flags"]
+
         sow_record = await storage.create_sow(
             project_id=project_id,
             user_id=user_id,
             title=sow_title,
-            content_json=output.sow.model_dump(),
+            content_json=sow_content_json,
             content_markdown=markdown_content,
-            risk_flags=[r.model_dump() for r in output.risk_flags],
-            confidence_score=output.confidence_score,
+            risk_flags=merged_risk_flags,
+            confidence_score=validation["confidence_score"],
+            org_id=context.org_id,
+            quality_score=validation["quality_score"],
+            risk_score=validation["risk_score"],
         )
         sow_id = sow_record["id"]
         logger.info(f"[GENERATE] SOW saved: {sow_id}")
@@ -113,8 +128,13 @@ async def generate_sow(
         logger.info(f"[GENERATE] Project status finalized: completed")
 
         # 8. Track usage event
-        usage = UsageService()
-        await usage.track_event(user_id, "sow_generated", token_count=len(raw.split()))
+        await usage.track_event(
+            context.org_id,
+            user_id,
+            "sow_generated",
+            token_count=len(raw.split()),
+            metadata={"sow_id": sow_id, "project_id": project_id},
+        )
 
         # Map sections for response
         sow_sections = []
@@ -156,10 +176,10 @@ async def generate_sow(
                 sections=sow_sections
             ),
             extracted_brief=output.extracted_brief.model_dump(),
-            confidence_score=output.confidence_score,
-            risk_flags=[r.model_dump() for r in output.risk_flags],
+            confidence_score=validation["confidence_score"],
+            risk_flags=merged_risk_flags,
             quality=QualityDetails(
-                overall_quality_score=int(orchestrator.state.a7_quality.overall_quality_score) if orchestrator.state.a7_quality else 70,
+                overall_quality_score=validation["quality_score"],
                 approval_status=orchestrator.state.a7_quality.approval_status if orchestrator.state.a7_quality else "approved_with_warnings",
                 ready_for_export=orchestrator.state.a7_quality.ready_for_export if orchestrator.state.a7_quality else True,
                 warnings=orchestrator.state.a7_quality.suggestions if (orchestrator.state.a7_quality and hasattr(orchestrator.state.a7_quality, "suggestions")) else []

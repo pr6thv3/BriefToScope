@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from app.config import get_settings
 from app.utils.logger import get_logger
@@ -20,6 +20,7 @@ _demo_subscriptions = {}
 _demo_webhook_events = {}
 _demo_generation_jobs = {}
 _demo_generation_job_events = {}
+_demo_pdf_exports = {}
 
 
 class StorageService:
@@ -127,7 +128,8 @@ class StorageService:
             raise StorageError("Failed to create transcript")
 
     async def create_sow(self, project_id: str, user_id: str, title: str, content_json: dict,
-                         content_markdown: str, risk_flags: list, confidence_score: float, org_id: str = "") -> dict:
+                         content_markdown: str, risk_flags: list, confidence_score: float, org_id: str = "",
+                         quality_score: int = 0, risk_score: int = 0) -> dict:
         data = {
             "id": str(uuid.uuid4()),
             "project_id": project_id,
@@ -137,6 +139,8 @@ class StorageService:
             "content_markdown": content_markdown,
             "risk_flags_json": risk_flags,
             "confidence_score": confidence_score,
+            "quality_score": quality_score,
+            "risk_score": risk_score,
             "status": "draft",
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
@@ -162,6 +166,23 @@ class StorageService:
         except Exception as e:
             logger.error(f"Failed to list SOWs: {e}")
             raise StorageError("Failed to list SOWs")
+
+    async def get_sows_by_org(self, org_id: str) -> List[dict]:
+        if self._demo:
+            return [s for s in _demo_sows.values() if s.get("org_id") == org_id]
+        try:
+            resp = (
+                self._get_client()
+                .table("sows")
+                .select("*")
+                .eq("org_id", org_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            return resp.data or []
+        except Exception as e:
+            logger.error(f"Failed to list workspace SOWs: {e}")
+            raise StorageError("Failed to list workspace SOWs")
 
     async def get_sow_by_id(self, sow_id: str) -> Optional[dict]:
         if self._demo:
@@ -275,16 +296,35 @@ class StorageService:
             logger.error(f"Failed to update e-sign request: {e}")
             return None
 
-    async def create_usage_event(self, user_id: str, event_type: str, token_count: int, estimated_cost: float) -> dict:
+    async def create_usage_event(
+        self,
+        user_id: str,
+        event_type: str,
+        token_count: int = 0,
+        estimated_cost: float = 0.0,
+        org_id: str = "",
+        quantity: int = 1,
+        metadata_json: Optional[dict] = None,
+        billing_period_start: str = "",
+        billing_period_end: str = "",
+    ) -> dict:
         data = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
+            "org_id": org_id,
             "event_type": event_type,
+            "quantity": quantity,
             "token_count": token_count,
+            "tokens": token_count,
             "estimated_cost": estimated_cost,
+            "cost": estimated_cost,
+            "metadata_json": metadata_json or {},
+            "billing_period_start": billing_period_start,
+            "billing_period_end": billing_period_end,
             "created_at": datetime.utcnow().isoformat(),
         }
         if self._demo:
+            _demo_billing.setdefault("usage_events", []).append(data)
             return data
         try:
             resp = self._get_client().table("usage_events").insert(data).execute()
@@ -292,6 +332,38 @@ class StorageService:
         except Exception as e:
             logger.error(f"Failed to log usage event: {e}")
             return data
+
+    async def sum_usage_events(
+        self,
+        org_id: str,
+        event_type: str,
+        period_start: datetime,
+        period_end: datetime,
+    ) -> int:
+        if self._demo:
+            events = _demo_billing.get("usage_events", [])
+            return sum(
+                int(event.get("quantity") or 1)
+                for event in events
+                if event.get("org_id") == org_id
+                and event.get("event_type") == event_type
+                and period_start <= _parse_datetime(event.get("created_at")) < period_end
+            )
+        try:
+            resp = (
+                self._get_client()
+                .table("usage_events")
+                .select("quantity, created_at")
+                .eq("org_id", org_id)
+                .eq("event_type", event_type)
+                .gte("created_at", period_start.isoformat())
+                .lt("created_at", period_end.isoformat())
+                .execute()
+            )
+            return sum(int(row.get("quantity") or 1) for row in (resp.data or []))
+        except Exception as e:
+            logger.error(f"Failed to sum usage events: {e}")
+            return 0
 
     async def get_billing_subscription(self, org_id: str) -> Optional[dict]:
         if self._demo:
@@ -481,28 +553,164 @@ class StorageService:
             logger.error(f"Failed to update SOW status: {e}")
             raise StorageError("Failed to update SOW status")
 
-    async def upload_pdf(self, sow_id: str, pdf_bytes: bytes, filename: str, user_id: str = "") -> str:
+    async def upload_pdf_private(
+        self,
+        sow_id: str,
+        pdf_bytes: bytes,
+        filename: str,
+        org_id: str,
+        user_id: str = "",
+    ) -> str:
+        bucket = "sow-pdfs"
+        path = f"organizations/{org_id}/sows/{sow_id}/{filename}"
         if self._demo:
-            return f"https://demo.storage/sow-pdfs/sows/{user_id or 'demo'}/{sow_id}/{filename}"
+            return path
         try:
-            bucket = "sow-pdfs"
-            path = f"sows/{user_id or 'unknown'}/{sow_id}/{filename}"
             try:
                 self._get_client().storage.get_bucket(bucket)
             except Exception:
-                self._get_client().storage.create_bucket(bucket, {"public": True})
+                self._get_client().storage.create_bucket(bucket, {"public": False})
 
-            # Remove existing file if present (overwrite)
             try:
                 self._get_client().storage.from_(bucket).remove([path])
             except Exception:
                 pass
 
-            self._get_client().storage.from_(bucket).upload(path, pdf_bytes, {"content-type": "application/pdf"})
-            url = self._get_client().storage.from_(bucket).get_public_url(path)
-            return url
+            self._get_client().storage.from_(bucket).upload(
+                path,
+                pdf_bytes,
+                {"content-type": "application/pdf", "upsert": "true"},
+            )
+            return path
         except Exception as e:
-            logger.warning(f"Supabase PDF upload failed: {e}. Returning demo fallback URL.")
-            # Fallback to mock URL rather than crashing
-            return f"https://demo.storage/sow-pdfs/sows/{user_id or 'unknown'}/{sow_id}/{filename}"
+            logger.error(f"Private Supabase PDF upload failed: {e}")
+            raise StorageError("Failed to upload PDF to private storage")
+
+    async def create_pdf_export(
+        self,
+        sow_id: str,
+        storage_path: str,
+        status: str = "ready",
+        version_id: str | None = None,
+        signed_url_expires_at: str | None = None,
+    ) -> dict:
+        data = {
+            "id": str(uuid.uuid4()),
+            "sow_id": sow_id,
+            "version_id": version_id,
+            "storage_path": storage_path,
+            "signed_url_expires_at": signed_url_expires_at,
+            "status": status,
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        if self._demo:
+            _demo_pdf_exports[data["id"]] = data
+            return data
+        try:
+            resp = self._get_client().table("pdf_exports").insert(data).execute()
+            return resp.data[0] if resp.data else data
+        except Exception as e:
+            logger.error(f"Failed to create PDF export record: {e}")
+            raise StorageError("Failed to record PDF export")
+
+    async def get_pdf_export(self, export_id: str, sow_id: str = "") -> Optional[dict]:
+        if self._demo:
+            export = _demo_pdf_exports.get(export_id)
+            if export and (not sow_id or export.get("sow_id") == sow_id):
+                return export
+            return None
+        try:
+            query = self._get_client().table("pdf_exports").select("*").eq("id", export_id)
+            if sow_id:
+                query = query.eq("sow_id", sow_id)
+            resp = query.single().execute()
+            return resp.data
+        except Exception:
+            return None
+
+    async def get_billing_subscription_by_paypal_id(self, paypal_subscription_id: str) -> Optional[dict]:
+        if self._demo:
+            return next(
+                (
+                    subscription
+                    for subscription in _demo_subscriptions.values()
+                    if subscription.get("paypal_subscription_id") == paypal_subscription_id
+                ),
+                None,
+            )
+        try:
+            resp = (
+                self._get_client()
+                .table("subscriptions")
+                .select("*")
+                .eq("paypal_subscription_id", paypal_subscription_id)
+                .single()
+                .execute()
+            )
+            return resp.data
+        except Exception:
+            return None
+
+    async def update_pdf_export_signed_expiry(self, export_id: str, expires_at: str) -> None:
+        if self._demo:
+            if export_id in _demo_pdf_exports:
+                _demo_pdf_exports[export_id]["signed_url_expires_at"] = expires_at
+            return
+        try:
+            self._get_client().table("pdf_exports").update(
+                {"signed_url_expires_at": expires_at}
+            ).eq("id", export_id).execute()
+        except Exception as e:
+            logger.warning(f"Failed to update PDF export signed URL expiry: {e}")
+
+    async def update_pdf_export(self, export_id: str, data: dict) -> Optional[dict]:
+        data["updated_at"] = datetime.utcnow().isoformat()
+        if self._demo:
+            if export_id in _demo_pdf_exports:
+                _demo_pdf_exports[export_id].update(data)
+                return _demo_pdf_exports[export_id]
+            return None
+        try:
+            resp = self._get_client().table("pdf_exports").update(data).eq("id", export_id).execute()
+            return resp.data[0] if resp.data else None
+        except Exception as e:
+            logger.error(f"Failed to update PDF export: {e}")
+            return None
+
+    async def create_signed_pdf_url(self, storage_path: str, ttl_seconds: int = 600) -> Optional[str]:
+        if self._demo:
+            return None
+        try:
+            response = self._get_client().storage.from_("sow-pdfs").create_signed_url(storage_path, ttl_seconds)
+            return response.get("signedURL") or response.get("signed_url") or response.get("signedUrl")
+        except Exception as e:
+            logger.error(f"Failed to create signed PDF URL: {e}")
+            raise StorageError("Failed to create signed PDF URL")
+
+    async def upload_pdf(self, sow_id: str, pdf_bytes: bytes, filename: str, user_id: str = "") -> str:
+        """Backward-compatible private upload helper.
+
+        New code should use upload_pdf_private + pdf_exports. This method returns
+        the storage path, never a public or demo URL.
+        """
+        if self._demo:
+            return f"organizations/{user_id or 'demo'}/sows/{sow_id}/{filename}"
+        return await self.upload_pdf_private(
+            sow_id=sow_id,
+            pdf_bytes=pdf_bytes,
+            filename=filename,
+            org_id=user_id or "unknown",
+            user_id=user_id,
+        )
+
+
+def _parse_datetime(value: str | None) -> datetime:
+    if not value:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    try:
+        normalized = value.replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(normalized)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    except Exception:
+        return datetime.min.replace(tzinfo=timezone.utc)
 

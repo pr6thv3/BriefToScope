@@ -1,10 +1,10 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, require_permission
 from app.models.production_schemas import GenerationCreateRequest, GenerationJobResponse
 from app.services.generation_job_service import GenerationJobService
 from app.workers.dispatcher import dispatch_generation_job
@@ -16,11 +16,10 @@ router = APIRouter(prefix="/api/generations", tags=["Generations"])
 async def create_generation(
     req: GenerationCreateRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
-    x_workspace_id: str = Header(default=""),
+    context: RequestContext = Depends(require_permission("sow:generate")),
 ):
     service = GenerationJobService()
-    job = await service.create_job(req, current_user, x_workspace_id or None)
+    job = await service.create_job(req, context)
     try:
         dispatched = dispatch_generation_job(job["id"])
     except RuntimeError as exc:
@@ -32,15 +31,29 @@ async def create_generation(
 
 
 @router.get("/{generation_id}", response_model=GenerationJobResponse)
-async def get_generation(generation_id: str, current_user: dict = Depends(get_current_user)):
+async def get_generation(
+    generation_id: str,
+    context: RequestContext = Depends(require_permission("sow:view")),
+):
     job = await GenerationJobService().get_job(generation_id)
     if not job:
         raise HTTPException(status_code=404, detail="Generation job not found")
+    if job.get("org_id") != context.org_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this generation job")
     return job
 
 
 @router.get("/{generation_id}/events")
-async def stream_generation_events(generation_id: str, current_user: dict = Depends(get_current_user)):
+async def stream_generation_events(
+    generation_id: str,
+    context: RequestContext = Depends(require_permission("sow:view")),
+):
+    initial_job = await GenerationJobService().get_job(generation_id)
+    if not initial_job:
+        raise HTTPException(status_code=404, detail="Generation job not found")
+    if initial_job.get("org_id") != context.org_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this generation job")
+
     async def event_stream():
         service = GenerationJobService()
         last_index = 0

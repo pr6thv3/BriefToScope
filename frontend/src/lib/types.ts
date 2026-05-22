@@ -150,6 +150,7 @@ export type SOWDetail = {
   risk_flags?: RiskFlag[];
   risk_flags_json: RiskFlag[];
   quality_score?: number;
+  risk_score?: number;
   confidence_score: number;
   scope_confidence_score?: number;
   risk_level?: "low" | "medium" | "high";
@@ -178,7 +179,11 @@ export type UpdateSOWResponse = {
 export type PDFExportResponse = {
   success: boolean;
   sow_id: string;
-  pdf_url: string;
+  export_id?: string;
+  status?: string;
+  pdf_url?: string | null;
+  download_url?: string | null;
+  signed_url_expires_at?: string | null;
   filename: string;
   generated_at: string;
 };

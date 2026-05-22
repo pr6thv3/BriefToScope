@@ -1,11 +1,10 @@
-import { defaultSectionQuality } from "@/lib/sow";
+import type { ApiAuth } from "@/lib/api";
 import type {
   ESignResponse,
   PDFExportResponse,
   RegenerateSectionResponse,
   SendSignaturePayload,
   SOWDetail,
-  SOWSection,
   SOWSectionKey,
   UpdateSOWPayload,
   UpdateSOWResponse,
@@ -17,15 +16,29 @@ const API_BASE_URL =
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT";
   body?: unknown;
+  auth?: ApiAuth;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const token =
+    typeof options.auth?.token === "function"
+      ? await options.auth.token()
+      : options.auth?.token ?? null;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (options.auth?.workspaceId) {
+    headers["X-Workspace-Id"] = options.auth.workspaceId;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer demo",
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
   });
@@ -60,30 +73,33 @@ async function sowRequest<T>(
   }
 }
 
-export function getSOW(id: string) {
-  return sowRequest<SOWDetail>(`/api/sows/${id}`, `/sows/${id}`);
+export function getSOW(id: string, auth?: ApiAuth) {
+  return sowRequest<SOWDetail>(`/api/sows/${id}`, `/sows/${id}`, { auth });
 }
 
-export function updateSOW(id: string, payload: UpdateSOWPayload) {
+export function updateSOW(id: string, payload: UpdateSOWPayload, auth?: ApiAuth) {
   return sowRequest<UpdateSOWResponse>(`/api/sows/${id}`, `/sows/${id}`, {
     method: "PUT",
     body: payload,
+    auth,
   });
 }
 
-export function exportSOWPDF(id: string) {
+export function exportSOWPDF(id: string, auth?: ApiAuth) {
   return sowRequest<PDFExportResponse>(
     `/api/sows/${id}/export-pdf`,
     `/sows/${id}/export-pdf`,
     {
       method: "POST",
+      auth,
     }
   );
 }
 
 export function sendSOWSignature(
   id: string,
-  payload: SendSignaturePayload = {}
+  payload: SendSignaturePayload = {},
+  auth?: ApiAuth
 ) {
   return sowRequest<ESignResponse>(
     `/api/sows/${id}/send-signature`,
@@ -91,6 +107,7 @@ export function sendSOWSignature(
     {
       method: "POST",
       body: payload,
+      auth,
     }
   );
 }
@@ -98,67 +115,19 @@ export function sendSOWSignature(
 export async function regenerateSOWSection(
   id: string,
   sectionKey: SOWSectionKey,
-  currentMarkdown: string
+  currentMarkdown: string,
+  auth?: ApiAuth
 ) {
-  try {
-    return await sowRequest<RegenerateSectionResponse>(
-      `/api/sows/${id}/regenerate-section`,
-      `/sows/${id}/regenerate-section`,
-      {
-        method: "POST",
-        body: {
-          section_key: sectionKey,
-          current_markdown: currentMarkdown,
-        },
-      }
-    );
-  } catch {
-    return {
-      section: buildMockRegeneratedSection(sectionKey, currentMarkdown),
-    };
-  }
-}
-
-function buildMockRegeneratedSection(
-  sectionKey: SOWSectionKey,
-  currentMarkdown: string
-): SOWSection {
-  const additions: Record<SOWSectionKey, string> = {
-    project_overview:
-      "This language has been tightened to read as a client-ready commercial summary with clearer responsibility boundaries.",
-    objectives:
-      "- Confirm project outcomes through measurable approval checkpoints.\n- Keep scope decisions tied to the agreed brand and website deliverables.",
-    scope_of_work:
-      "- Clarify that any added pages, integrations, or content services require a written change order.",
-    deliverables:
-      "- Delivery includes source-ready brand and Webflow assets after final payment is received.",
-    timeline:
-      "- Timeline is dependent on client feedback windows and timely delivery of final content/assets.",
-    payment_schedule:
-      "- Work may pause if milestone payments are not received by the agreed due date.",
-    client_responsibilities:
-      "- Client will name one final decision-maker for approvals and launch readiness.",
-    revision_policy:
-      "Additional revisions beyond the two included rounds will be estimated and approved before work continues.",
-    out_of_scope:
-      "- Hosting ownership, copywriting, photography, and third-party integrations remain excluded unless added in writing.",
-    assumptions:
-      "- The agency is relying on complete, accurate, and timely client-provided content and platform access.",
-    acceptance_criteria:
-      "- Final acceptance occurs when the agreed deliverables are provided and no blocking defects remain against the approved scope.",
-    signature_section:
-      "Authorized representatives will confirm acceptance of scope, payment terms, and project responsibilities below.",
-  };
-
-  return {
-    section_key: sectionKey,
-    section_title: sectionKey
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" "),
-    content_markdown: `${currentMarkdown.trim()}\n\n${additions[sectionKey]}`.trim(),
-    order: 1,
-    quality_score: Math.min(defaultSectionQuality(sectionKey) + 3, 99),
-    last_regenerated_at: new Date().toISOString(),
-  };
+  return sowRequest<RegenerateSectionResponse>(
+    `/api/sows/${id}/regenerate-section`,
+    `/sows/${id}/regenerate-section`,
+    {
+      method: "POST",
+      body: {
+        section_key: sectionKey,
+        current_markdown: currentMarkdown,
+      },
+      auth,
+    }
+  );
 }

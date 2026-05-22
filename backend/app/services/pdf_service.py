@@ -342,11 +342,12 @@ ul {{ padding-left: 20px; }}
         project_name: str = "",
         industry: str = "",
         user_id: str = "",
+        org_id: str = "",
     ) -> dict:
-        """Generate PDF, upload to storage, update SOW record, and return result dict.
+        """Generate PDF, upload to private storage, and record export metadata.
 
         Never raises — every step has a try/except guard. The result dict always has
-        success=True because the worst case (HTML fallback + mock URL) is still useful.
+        Storage errors are surfaced instead of returning public or demo URLs.
         """
         sow_id = sow.get("id", "unknown")
         filename = f"brief-to-scope-sow-{sow_id}.pdf"
@@ -367,19 +368,25 @@ ul {{ padding-left: 20px; }}
         # 2. Upload to storage
         logger.info("[PDF] Step 3/4: Uploading to storage...")
         try:
-            pdf_url = await self.storage.upload_pdf(sow_id, pdf_bytes, filename, user_id=user_id)
+            storage_path = await self.storage.upload_pdf_private(
+                sow_id=sow_id,
+                pdf_bytes=pdf_bytes,
+                filename=filename,
+                org_id=org_id or sow.get("org_id") or user_id or "unknown",
+                user_id=user_id,
+            )
+            export_record = await self.storage.create_pdf_export(
+                sow_id=sow_id,
+                storage_path=storage_path,
+                status="ready",
+            )
+            pdf_url = storage_path
             logger.info("[PDF] Step 3/4: Uploaded → %s", pdf_url)
         except Exception as e:
-            logger.warning("[PDF] Step 3/4: Storage upload failed: %s. Using mock URL.", e)
-            pdf_url = f"https://demo.storage/sow-pdfs/sows/{user_id or 'demo'}/{sow_id}/{filename}"
+            logger.warning("[PDF] Step 3/4: Private storage upload failed: %s.", e)
+            raise
 
-        # 3. Update SOW record with pdf_url
-        logger.info("[PDF] Step 4/4: Updating SOW record...")
-        try:
-            await self.storage.update_sow_pdf_url(sow_id, pdf_url)
-            logger.info("[PDF] Step 4/4: pdf_url saved.")
-        except Exception as e:
-            logger.warning("[PDF] Step 4/4: Failed to update pdf_url on SOW: %s (non-fatal)", e)
+        logger.info("[PDF] Step 4/4: private export record saved.")
 
         # 4. Update SOW status to "exported"
         try:
@@ -395,6 +402,9 @@ ul {{ padding-left: 20px; }}
         return {
             "success": True,
             "sow_id": sow_id,
+            "export_id": export_record["id"],
+            "status": export_record.get("status", "ready"),
+            "storage_path": storage_path,
             "pdf_url": pdf_url,
             "filename": filename,
             "generated_at": generated_at,

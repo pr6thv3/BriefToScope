@@ -41,6 +41,10 @@ class AIValidationService:
         if not sections.get("payment_schedule"):
             missing_items.append("Payment schedule")
             risk_flags.append(self._risk("budget", "high", "Payment Schedule Missing", "Payment timing and milestone conditions are not defined."))
+        deliverables = sections.get("deliverables", "")
+        if not deliverables or len([line for line in deliverables.splitlines() if line.strip()]) < 2:
+            missing_items.append("Specific deliverables")
+            risk_flags.append(self._risk("deliverables", "high", "Deliverables Too Vague", "The SOW does not define enough concrete deliverables to prevent scope expansion."))
         if "revision" not in sections.get("revision_policy", "").lower():
             missing_items.append("Revision limits")
             risk_flags.append(self._risk("revisions", "medium", "Revision Limits Undefined", "The revision policy does not clearly limit rounds or change requests."))

@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user
+from app.dependencies import RequestContext, require_permission
 from app.models.production_schemas import (
+    BillingActionResponse,
     BillingPlanResponse,
+    BillingStatusResponse,
+    ChangePlanRequest,
     CheckoutRequest,
     CheckoutResponse,
     UsageSummaryResponse,
 )
-from app.services.auth_service import AuthService
 from app.services.billing_service import BillingService
-from app.services.workspace_service import WorkspaceService
 from app.utils.errors import BriefToScopeError
 
 router = APIRouter(prefix="/api/billing", tags=["Billing"])
@@ -20,32 +21,62 @@ async def list_billing_plans():
     return BillingService().list_plans()
 
 
+@router.get("/status", response_model=BillingStatusResponse)
+async def get_billing_status(
+    context: RequestContext = Depends(require_permission("billing:manage")),
+):
+    return await BillingService().get_billing_status(context.org_id, context.plan)
+
+
+@router.get("/usage", response_model=UsageSummaryResponse)
+async def get_usage_summary(context: RequestContext = Depends(require_permission("sow:view"))):
+    return await BillingService().get_usage_summary(context.org_id, context.user_id, context.plan)
+
+
 @router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout(
     req: CheckoutRequest,
-    current_user: dict = Depends(get_current_user),
-    x_workspace_id: str = Header(default=""),
+    context: RequestContext = Depends(require_permission("billing:manage")),
 ):
     try:
-        user = await AuthService().get_or_create_user(current_user["sub"], current_user.get("email", ""), "")
-        workspace_service = WorkspaceService()
-        workspace = await workspace_service.ensure_default_workspace(user)
-        org_id = x_workspace_id or workspace["id"]
-        await workspace_service.require_membership(user["id"], org_id, ["owner", "admin"])
-        return await BillingService().create_checkout_session(org_id, req.plan, req.success_url, req.cancel_url)
+        return await BillingService().create_checkout_session(
+            context.org_id,
+            req.plan,
+            req.success_url,
+            req.cancel_url,
+        )
     except BriefToScopeError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
-@router.get("/usage", response_model=UsageSummaryResponse)
-async def get_usage_summary(
-    current_user: dict = Depends(get_current_user),
-    x_workspace_id: str = Header(default=""),
+@router.post("/change-plan", response_model=BillingActionResponse)
+async def change_plan(
+    req: ChangePlanRequest,
+    context: RequestContext = Depends(require_permission("billing:manage")),
 ):
-    user = await AuthService().get_or_create_user(current_user["sub"], current_user.get("email", ""), "")
-    workspace_service = WorkspaceService()
-    workspace = await workspace_service.ensure_default_workspace(user)
-    org_id = x_workspace_id or workspace["id"]
-    plan = workspace.get("plan", "free")
-    return await BillingService().get_usage_summary(org_id, user["id"], plan)
+    try:
+        checkout = await BillingService().change_plan(
+            context.org_id,
+            req.plan,
+            req.success_url,
+            req.cancel_url,
+        )
+        return {"status": "approval_required", "checkout_url": checkout.get("checkout_url")}
+    except BriefToScopeError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
+
+@router.post("/cancel", response_model=BillingActionResponse)
+async def cancel_subscription(context: RequestContext = Depends(require_permission("billing:manage"))):
+    try:
+        return await BillingService().cancel_subscription(context.org_id)
+    except BriefToScopeError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+@router.post("/reactivate", response_model=BillingActionResponse)
+async def reactivate_subscription(context: RequestContext = Depends(require_permission("billing:manage"))):
+    try:
+        return await BillingService().reactivate_subscription(context.org_id)
+    except BriefToScopeError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)

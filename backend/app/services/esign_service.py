@@ -45,7 +45,9 @@ class ESignService:
 
     async def _docusign_send(self, sow_id: str, sow: dict) -> dict:
         account_id = self.settings.docusign_account_id
-        base_url = self.settings.docusign_base_url or "https://demo.docusign.net/restapi"
+        if not self.settings.docusign_base_url:
+            raise BriefToScopeError("DOCUSIGN_BASE_URL is required for production e-sign", 503)
+        base_url = self.settings.docusign_base_url
         access_token = await self._get_docusign_access_token()
 
         envelope_payload = {
