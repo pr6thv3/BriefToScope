@@ -17,6 +17,9 @@ class ClauseIntelligenceService:
             "common_exclusions": template.common_out_of_scope_items,
             "payment_schedule_options": [option.model_dump() for option in template.payment_schedule_options],
             "revision_policy": template.revision_policy,
+            "client_responsibilities": template.client_responsibilities,
+            "acceptance_criteria": template.acceptance_criteria,
+            "hidden_scope_traps": template.hidden_scope_traps,
             "risk_rules": [rule.model_dump() for rule in template.risk_rules],
             "clause_library": template.clause_library.model_dump(),
         }

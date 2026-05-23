@@ -52,6 +52,7 @@ class AIDataService:
                 "client_responsibilities": template.client_responsibilities,
                 "timeline_assumptions": template.timeline_assumptions,
                 "acceptance_criteria": template.acceptance_criteria,
+                "hidden_scope_traps": template.hidden_scope_traps,
                 "clause_library": template.clause_library.model_dump()
             },
             "pipeline_stages": {

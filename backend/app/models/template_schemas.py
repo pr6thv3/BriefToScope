@@ -34,4 +34,5 @@ class SOWTemplate(BaseModel):
     client_responsibilities: List[str] = Field(..., description="Predefined client requirements")
     timeline_assumptions: List[str] = Field(..., description="Typical timeline constraints and assumptions")
     acceptance_criteria: List[str] = Field(..., description="Predefined approval standards")
+    hidden_scope_traps: List[str] = Field(default_factory=list, description="Common hidden scope creep traps for this industry")
     clause_library: ClauseLibrary = Field(..., description="The catalog of clauses")

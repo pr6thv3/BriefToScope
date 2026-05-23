@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, AlertCircle } from "lucide-react";
+import Link from "next/link";
 import type { GenerateSOWResponse, GenerationStep } from "@/lib/types";
 import { AIProgressTimeline } from "@/components/ai/AIProgressTimeline";
 import { AIExtractionCards } from "@/components/ai/AIExtractionCards";
@@ -12,7 +13,8 @@ import { ClausePreview } from "@/components/ai/ClausePreview";
 import { SOWPreviewEditor } from "@/components/sow/SOWPreviewEditor";
 import { QualityPanel } from "@/components/sow/QualityPanel";
 import { ExportActions } from "@/components/sow/ExportActions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type LiveGenerationCanvasProps = {
   steps: GenerationStep[];
@@ -47,6 +49,12 @@ export function LiveGenerationCanvas({ steps, status, result, errorMsg, onRetry 
   }
 
   if (status === "error") {
+    const lowerError = (errorMsg || "").toLowerCase();
+    const isBillingOrQuota =
+      lowerError.includes("quota") ||
+      lowerError.includes("subscription") ||
+      lowerError.includes("billing") ||
+      lowerError.includes("plan");
     return (
       <div className="flex h-full min-h-[600px] flex-col items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center">
         <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-rose-100 text-rose-500">
@@ -54,9 +62,19 @@ export function LiveGenerationCanvas({ steps, status, result, errorMsg, onRetry 
         </div>
         <h3 className="mb-2 text-xl font-semibold text-rose-800">Generation Failed</h3>
         <p className="max-w-md text-sm text-rose-600 mb-6">{errorMsg || "An unexpected error occurred."}</p>
-        <Button onClick={onRetry} variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100">
-          Try Again
-        </Button>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button onClick={onRetry} variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100">
+            Try Again
+          </Button>
+          {isBillingOrQuota ? (
+            <Link
+              href="/settings/billing"
+              className={cn(buttonVariants(), "bg-slate-900 text-white hover:bg-slate-800")}
+            >
+              Review Billing
+            </Link>
+          ) : null}
+        </div>
       </div>
     );
   }

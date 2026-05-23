@@ -5,12 +5,13 @@ import Link from "next/link";
 import {
   Clock3,
   FileText,
+  LoaderCircle,
   ShieldCheck,
   Upload,
   WandSparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,40 +26,51 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@/lib/api";
-import { fallbackSows } from "@/lib/demo";
+import { useAppAuth } from "@/components/auth/AppAuthProvider";
+import { useApiClient } from "@/lib/use-api-client";
 import type { SOWListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function DashboardView() {
-  const [sows, setSows] = useState<SOWListItem[]>(fallbackSows);
-  const [source, setSource] = useState<"seed" | "api">("seed");
+  const api = useApiClient();
+  const auth = useAppAuth();
+  const [sows, setSows] = useState<SOWListItem[]>([]);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    api
-      .listSows()
-      .then((items) => {
+    async function loadSows() {
+      if (!auth.workspaceId) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setError("");
+      try {
+        const items = await api.listSows();
         if (cancelled) {
           return;
         }
-        if (items.length > 0) {
-          setSows(items);
-          setSource("api");
-        }
-      })
-      .catch((err) => {
+        setSows(items);
+      } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Unable to load SOWs");
         }
-      });
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadSows();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [api, auth.workspaceId]);
 
   const stats = useMemo(() => {
     const generated = sows.length;
@@ -67,24 +79,24 @@ export function DashboardView() {
     return [
       {
         label: "SOWs Generated",
-        value: generated >= 10 ? String(generated) : "142",
-        helper: source === "api" ? "Loaded from backend" : "+15% from last month",
+        value: String(generated),
+        helper: generated > 0 ? "Loaded from workspace" : "Generate your first SOW",
         icon: FileText,
       },
       {
         label: "Risks Prevented",
-        value: String(riskPrevented),
-        helper: "Based on AI analysis",
+        value: generated > 0 ? String(riskPrevented) : "0",
+        helper: "Based on stored risk warnings",
         icon: ShieldCheck,
       },
       {
         label: "Hours Saved",
-        value: String(hoursSaved),
+        value: generated > 0 ? String(hoursSaved) : "0",
         helper: "Estimated efficiency gain",
         icon: Clock3,
       },
     ];
-  }, [source, sows.length]);
+  }, [sows.length]);
 
   return (
     <div className="px-4 py-8 md:px-8">
@@ -124,44 +136,65 @@ export function DashboardView() {
             <CardTitle className="text-xl">Recent SOWs</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>SOW Name</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sows.map((sow) => (
-                  <TableRow key={sow.id}>
-                    <TableCell>
-                      <div className="font-medium">{sow.title}</div>
-                      <div className="text-sm text-slate-500">
-                        {sow.project_name}
-                      </div>
-                    </TableCell>
-                    <TableCell>{sow.client_name}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={sow.status} />
-                    </TableCell>
-                    <TableCell>{formatDate(sow.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" })
-                        )}
-                        href={`/sow/${sow.id}`}
-                      >
-                        View
-                      </Link>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2 p-12 text-sm text-slate-500">
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                Loading workspace documents
+              </div>
+            ) : error ? (
+              <DashboardEmptyState
+                title="Dashboard could not load"
+                description={`BriefToScope could not read this workspace yet. ${error}`}
+                actionLabel="Retry"
+                onAction={() => window.location.reload()}
+              />
+            ) : sows.length === 0 ? (
+              <DashboardEmptyState
+                title="No SOWs yet"
+                description="Generate the first client-ready SOW from discovery notes, then come back here to track quality, risks, exports, and signatures."
+                actionLabel="Generate first SOW"
+                href="/generate"
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>SOW Name</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sows.map((sow) => (
+                    <TableRow key={sow.id}>
+                      <TableCell>
+                        <div className="font-medium">{sow.title}</div>
+                        <div className="text-sm text-slate-500">
+                          {sow.project_name}
+                        </div>
+                      </TableCell>
+                      <TableCell>{sow.client_name}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={sow.status} />
+                      </TableCell>
+                      <TableCell>{formatDate(sow.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          className={cn(
+                            buttonVariants({ variant: "outline", size: "sm" })
+                          )}
+                          href={`/sow/${sow.id}`}
+                        >
+                          View
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -190,23 +223,56 @@ export function DashboardView() {
               </p>
               {error ? (
                 <p className="mt-3 text-xs text-amber-700">
-                  Showing seeded data until the backend is available: {error}
+                  Backend status: {error}
                 </p>
               ) : null}
             </div>
             <div className="rounded-xl bg-blue-50 p-4 text-sm text-blue-950">
               <div className="mb-2 flex items-center gap-2 font-medium">
                 <WandSparkles className="size-4" aria-hidden="true" />
-                API wiring
+                Launch checklist
               </div>
               <p className="leading-6">
-                This dashboard reads from <span className="font-mono">/sows</span>{" "}
-                and falls back to PRD-aligned seed rows for first-run demos.
+                Create a workspace, generate a SOW, review risk warnings, export a private PDF, then upgrade when quota needs increase.
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function DashboardEmptyState({
+  title,
+  description,
+  actionLabel,
+  href,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  href?: string;
+  onAction?: () => void;
+}) {
+  const actionClass = cn(buttonVariants(), "bg-blue-600 text-white hover:bg-blue-500");
+  return (
+    <div className="flex flex-col items-center justify-center p-12 text-center">
+      <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+        <FileText className="size-5" aria-hidden="true" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">{description}</p>
+      {href ? (
+        <Link href={href} className={cn(actionClass, "mt-5")}>
+          {actionLabel}
+        </Link>
+      ) : (
+        <Button className="mt-5 bg-blue-600 text-white hover:bg-blue-500" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }

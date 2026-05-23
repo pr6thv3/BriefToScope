@@ -36,22 +36,58 @@
     {
       "label": "Standard 50/25/25",
       "milestones": [
-        { "percentage": "50%", "condition": "Due before project kickoff" },
-        { "percentage": "25%", "condition": "Due upon design approval" },
-        { "percentage": "25%", "condition": "Due before final launch or handoff" }
+        {
+          "percentage": "50%",
+          "condition": "Due before project kickoff"
+        },
+        {
+          "percentage": "25%",
+          "condition": "Due upon design approval"
+        },
+        {
+          "percentage": "25%",
+          "condition": "Due before final launch or handoff"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Copywriting ownership unclear",
-      "trigger_terms": ["copy", "content", "website text"],
+      "trigger_terms": [
+        "copy",
+        "content",
+        "website text"
+      ],
       "recommended_fix": "Define whether the client or agency provides final copy."
     },
     {
       "risk": "Animations undefined",
-      "trigger_terms": ["animations", "interactions", "motion"],
+      "trigger_terms": [
+        "animations",
+        "interactions",
+        "motion"
+      ],
       "recommended_fix": "Specify animation complexity and limits."
+    },
+    {
+      "risk": "Hosting ownership unclear",
+      "trigger_terms": [
+        "hosting",
+        "domain",
+        "dns",
+        "webflow account"
+      ],
+      "recommended_fix": "Assign ownership of hosting, domain, DNS, and platform billing before launch."
+    },
+    {
+      "risk": "SEO mentioned but not scoped",
+      "trigger_terms": [
+        "seo",
+        "rank",
+        "organic traffic"
+      ],
+      "recommended_fix": "Define whether SEO is limited to metadata or includes strategy, content, and reporting."
     }
   ],
   "client_responsibilities": [
@@ -86,10 +122,18 @@
       "Final approved deliverables become the property of the client upon receipt of full project payment."
     ],
     "change_request": [
-      "Additional requests outside the approved scope will be reviewed and may require adjusted pricing and timeline."
+      "Additional requests outside the approved scope will be reviewed and may require adjusted pricing and timeline.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Project timelines depend on timely client feedback, approvals, and asset delivery."
+      "Project timelines depend on timely client feedback, approvals, and asset delivery.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Copywriting quietly becoming included website scope",
+    "Client content and assets arriving after development starts",
+    "Hosting, domain, and third-party plugin ownership left undefined",
+    "Advanced animation or integration requests treated as basic build work"
+  ]
 }

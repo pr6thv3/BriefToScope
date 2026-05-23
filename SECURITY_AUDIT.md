@@ -1,62 +1,60 @@
 # Security Audit
 
-Date: 2026-05-21
+Date: 2026-05-23
 
-## Current Security Posture
+## Current Score
 
-Score: 72/100
+Security score: 82/100
 
-BriefToScope has a credible security foundation for a private beta: JWT verification, workspace authorization, production RLS policies, webhook signature verification, security headers, and audit log scaffolding. It is not yet enterprise-ready because production Clerk frontend integration, private file enforcement, dependency scanning gates, legal policies, and externalized rate limits remain incomplete.
+BriefToScope is ready for a controlled paid beta after production secrets and provider accounts are configured. The main remaining gaps are operational: live env setup, external rate limiting, legal review, and E2E proof across deployed services.
 
 ## Implemented Controls
 
 - Clerk JWT verification via JWKS outside demo mode.
-- PostgreSQL organization membership model.
+- Next.js protected route middleware.
+- PostgreSQL-backed workspace membership and RBAC.
+- Backend `RequestContext` permission checks on protected APIs.
+- Quota and inactive-subscription gates before generation, PDF export, and e-signature.
 - Supabase RLS production policies.
+- Private PDF storage path model with signed download URLs.
 - PayPal webhook signature verification outside demo mode.
 - Idempotent webhook event storage.
-- API security headers.
-- Frontend security headers.
-- Request ID propagation.
-- Basic in-process rate limiting.
+- Admin allowlist enforcement for readiness/worker health.
+- Security headers and in-process rate limiting.
 - Transcript sanitization and length validation.
-- Audit log service for sensitive product actions.
-- No tracked hardcoded secrets found by repository scan.
+- Audit logging for generation, edits, PDF exports, signed URL requests, e-sign, billing, and workspace actions.
+- Sentry hooks for frontend/backend.
+- No committed PayPal plan IDs, provider keys, or production secrets.
 
-## Key Risks
+## Remaining Risks
 
 | Risk | Severity | Status | Required Action |
 | --- | --- | --- | --- |
-| Frontend default demo bearer token | High | Open | Replace with Clerk token provider before production |
-| PDF public URL fallback | High | Open | Enforce private buckets and signed URLs |
-| Service role used by backend | Medium | Accepted | Keep backend-only; enforce permissions before writes |
-| In-process rate limiting | Medium | Open | Add Cloudflare/Upstash distributed rate limits |
-| Admin route not fully privileged | Medium | Open | Enforce email allowlist and owner/admin checks |
-| Dependency vulnerabilities unknown | Medium | Open | Review scheduled dependency-audit workflow failures and patch manually on `main` |
-| Legal/compliance pages incomplete | Medium | Open | Add privacy, terms, AI disclosure, retention policy |
+| Edge/distributed rate limiting not deployed | Medium | Open | Add Cloudflare WAF rules or Upstash-backed limiter before broad launch |
+| Legal docs need attorney review | Medium | Open | Review privacy, terms, AI disclosure, retention, refund policy |
+| E2E tests are not complete | Medium | Open | Add Playwright flows for sign-up, generate, edit, export, billing |
+| Supabase bucket config is manual | Medium | Open | Verify `sow-pdfs` is private in production |
+| Provider incident procedures are manual | Low | Open | Document outage playbooks for AI, PayPal, Supabase, Clerk |
 
-## OWASP Checklist
+## Production Requirements
 
-- Broken Access Control: partially mitigated with backend membership checks and RLS; needs full route coverage audit.
-- Cryptographic Failures: secrets are env-based; PDF private storage still needs enforcement.
-- Injection: Supabase client uses parameterized API calls; avoid raw SQL in request paths.
-- Insecure Design: demo mode must never be enabled in production.
-- Security Misconfiguration: add environment validation on startup before public launch.
-- Vulnerable Components: CI should run dependency audits.
-- Identification/Auth Failures: Clerk JWT verification is present; frontend token flow incomplete.
-- Software/Data Integrity: add signed deployment provenance later.
-- Logging/Monitoring: audit log exists; Sentry integration should be enabled.
-- SSRF: PayPal cert URL validation is implemented for webhook verification.
+1. `DEMO_MODE=false`.
+2. Production env validation passes.
+3. Vercel has only public frontend variables.
+4. Render API/worker have backend-only secrets.
+5. Supabase service role is never exposed to frontend.
+6. `sow-pdfs` bucket is private.
+7. PayPal webhook ID and live plan IDs are configured.
+8. Clerk issuer/JWKS match the production app.
+9. `ADMIN_EMAIL_ALLOWLIST` contains only internal operator emails.
+10. Sentry alerts and support email are monitored.
 
-## Production Security Requirements
+## OWASP Notes
 
-1. `DEMO_MODE=false` in production.
-2. Clerk frontend/session integration complete.
-3. `CLERK_JWKS_URL` and `CLERK_ISSUER` configured.
-4. Supabase service role only in backend environment.
-5. PDFs stored in private bucket.
-6. PayPal webhook ID configured.
-7. Rate limiting at edge or Redis layer.
-8. Sentry enabled.
-9. Security contact published.
-10. Privacy/terms/AI disclosure reviewed.
+- Broken access control: mitigated through JWT verification, workspace RBAC, and RLS defense in depth.
+- Cryptographic failures: secrets are env-based; PDF URLs are signed and short-lived.
+- Injection: Supabase client APIs are used instead of raw request-built SQL.
+- Insecure design: production startup fails if required env vars are missing.
+- Security misconfiguration: demo mode must never be enabled in production.
+- Vulnerable components: run `npm audit --audit-level=high` and scheduled dependency checks.
+- Logging/monitoring: Sentry and audit logs are wired; production alert routing still needs setup.

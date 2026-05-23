@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { identifyUser, trackEvent } from "@/lib/analytics";
 import { can, normalizeRole, type WorkspacePermission, type WorkspaceRole } from "@/lib/rbac";
 
 const API_BASE_URL =
@@ -133,8 +134,25 @@ function ClerkSessionBridge({ children }: { children: ReactNode }) {
 
     if (nextWorkspace && typeof window !== "undefined") {
       window.localStorage.setItem("brieftoscope.workspace_id", nextWorkspace.id);
+      identifyUser(userId ?? currentUserId(payload), {
+        email: user?.primaryEmailAddress?.emailAddress,
+        workspace_id: nextWorkspace.id,
+        workspace_role: nextWorkspace.role,
+        plan: nextWorkspace.plan,
+      });
+      trackEvent("workspace_synced", {
+        workspace_id: nextWorkspace.id,
+        role: nextWorkspace.role,
+        plan: nextWorkspace.plan,
+        subscription_status: nextWorkspace.subscription_status,
+      });
+      const signupMarker = `brieftoscope.signup_seen.${userId ?? "unknown"}`;
+      if (!window.localStorage.getItem(signupMarker)) {
+        window.localStorage.setItem(signupMarker, "1");
+        trackEvent("signup", { workspace_id: nextWorkspace.id });
+      }
     }
-  }, [getToken, isLoaded, isSignedIn, user?.primaryEmailAddress?.emailAddress]);
+  }, [getToken, isLoaded, isSignedIn, user?.primaryEmailAddress?.emailAddress, userId]);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -180,4 +198,11 @@ export function useAppAuth() {
   }
 
   return context;
+}
+
+function currentUserId(payload: AuthSyncResponse) {
+  if (payload.user && typeof payload.user === "object" && "id" in payload.user) {
+    return String((payload.user as { id?: unknown }).id ?? "");
+  }
+  return "";
 }

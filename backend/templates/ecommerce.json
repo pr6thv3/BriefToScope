@@ -33,22 +33,59 @@
     {
       "label": "Standard 50/30/20 Setup",
       "milestones": [
-        { "percentage": "50%", "condition": "Due upon signing SOW" },
-        { "percentage": "30%", "condition": "Due on password-protected staging site release" },
-        { "percentage": "20%", "condition": "Due prior to removing store password" }
+        {
+          "percentage": "50%",
+          "condition": "Due upon signing SOW"
+        },
+        {
+          "percentage": "30%",
+          "condition": "Due on password-protected staging site release"
+        },
+        {
+          "percentage": "20%",
+          "condition": "Due prior to removing store password"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Merchant account verification delays",
-      "trigger_terms": ["merchant account", "payout verification", "payment gateway"],
+      "trigger_terms": [
+        "merchant account",
+        "payout verification",
+        "payment gateway"
+      ],
       "recommended_fix": "Client must submit merchant documents within 7 days of kickoff to avoid gateway integration delays."
     },
     {
       "risk": "Inventory CSV data is corrupted",
-      "trigger_terms": ["inventory sheet", "product csv", "import list"],
+      "trigger_terms": [
+        "inventory sheet",
+        "product csv",
+        "import list"
+      ],
       "recommended_fix": "State that product imports assume client-provided spreadsheet follows agreed templates."
+    },
+    {
+      "risk": "Product migration scope unclear",
+      "trigger_terms": [
+        "import products",
+        "sku",
+        "variants",
+        "catalog"
+      ],
+      "recommended_fix": "Define product count, data cleanup responsibility, and migration acceptance rules."
+    },
+    {
+      "risk": "Complex commerce logic unscoped",
+      "trigger_terms": [
+        "subscription",
+        "marketplace",
+        "discount engine",
+        "fulfillment rules"
+      ],
+      "recommended_fix": "Separate advanced commerce rules from standard store setup."
     }
   ],
   "client_responsibilities": [
@@ -82,10 +119,18 @@
       "All custom themes and store templates transfer to client ownership upon milestone completion payments."
     ],
     "change_request": [
-      "Requests to add additional payment plugins require scope updates at standard hourly design rates."
+      "Requests to add additional payment plugins require scope updates at standard hourly design rates.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Delays in bank account verifications will pause checkout launch dates."
+      "Delays in bank account verifications will pause checkout launch dates.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Product data cleanup becoming migration scope",
+    "Payment gateway approvals delaying launch",
+    "Complex discount, subscription, or marketplace logic assumed as default commerce",
+    "Tax, shipping, and fulfillment rules not owned by a client decision-maker"
+  ]
 }

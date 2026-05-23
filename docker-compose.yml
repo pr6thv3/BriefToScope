@@ -16,7 +16,7 @@ services:
   worker:
     build:
       context: ./backend
-    command: celery -A app.workers.celery_app.celery_app worker -Q ai --loglevel=info
+    command: celery -A app.workers.celery_app.celery_app worker -Q ai_generation,pdf_exports,emails,billing --loglevel=info
     environment:
       DEMO_MODE: "true"
       REDIS_URL: redis://redis:6379/0

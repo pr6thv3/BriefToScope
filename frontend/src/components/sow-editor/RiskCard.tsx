@@ -7,6 +7,8 @@ type RiskCardProps = {
 };
 
 export function RiskCard({ risk }: RiskCardProps) {
+  const suggestedFix =
+    risk.suggested_fix || risk.recommended_fix || "Clarify this point before sending the SOW.";
   const config = {
     high: {
       icon: ShieldAlert,
@@ -52,7 +54,7 @@ export function RiskCard({ risk }: RiskCardProps) {
             {risk.description}
           </p>
           <p className="mt-3 text-xs font-medium leading-5 text-slate-600">
-            Suggested fix: {risk.suggested_fix}
+            Suggested fix: {suggestedFix}
           </p>
         </div>
       </div>

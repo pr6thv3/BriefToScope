@@ -66,6 +66,7 @@ def test_enrich_pipeline_context_structure():
     assert t["industry"] == "Web Design"
     assert "Website strategy" in t["standard_deliverables"]
     assert "Copywriting" in t["common_out_of_scope_items"]
+    assert len(t["hidden_scope_traps"]) > 0
     assert len(t["clause_library"]["ip_ownership"]) > 0
     
     # Assert pipeline stages are correctly preserved

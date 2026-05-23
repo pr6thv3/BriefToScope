@@ -29,8 +29,12 @@ def test_all_10_templates_load_correctly():
         assert len(template.default_sections) > 0
         assert len(template.standard_deliverables) > 0
         assert len(template.common_out_of_scope_items) > 0
+        assert len(template.hidden_scope_traps) > 0
         assert len(template.payment_schedule_options) > 0
         assert len(template.risk_rules) > 0
+        assert len(template.client_responsibilities) > 0
+        assert len(template.acceptance_criteria) > 0
+        assert len(template.clause_library.change_request) > 0
         
         # Verify cache works
         cached_template = service.load_template(industry)
@@ -78,6 +82,34 @@ def test_web_design_template_returns_expected_exclusions():
     # Verify clause library contains revision policies
     assert len(template.clause_library.revision) > 0
     assert "rounds of revisions" in template.clause_library.revision[0]
+
+def test_paid_beta_industry_templates_have_required_scope_intelligence():
+    """MVP launch industries must carry enough structure to guide AI and risk review."""
+    service = TemplateService()
+    required_industries = [
+        "Web Design",
+        "Branding",
+        "SEO",
+        "Marketing",
+        "Copywriting",
+        "Consulting",
+        "App Development",
+        "Video Production",
+    ]
+
+    for industry in required_industries:
+        template = service.load_template(industry)
+        assert template.standard_deliverables, industry
+        assert template.common_out_of_scope_items, industry
+        assert template.revision_policy, industry
+        assert template.client_responsibilities, industry
+        assert template.payment_schedule_options, industry
+        assert template.acceptance_criteria, industry
+        assert template.hidden_scope_traps, industry
+        assert template.risk_rules, industry
+        assert template.clause_library.payment, industry
+        assert template.clause_library.out_of_scope, industry
+        assert template.clause_library.client_responsibilities, industry
 
 def test_missing_directory_fallback_to_memory():
     """Verifies that if the templates directory does not exist, it falls back to DEFAULT_CONSULTING_TEMPLATE in memory."""

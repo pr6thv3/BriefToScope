@@ -182,14 +182,17 @@ class ClauseGenerator:
                 from app.services.ai_data_service import AIDataService
                 ai_data = AIDataService()
                 clauses = ai_data.get_clause_library(industry)
+                template = ai_data.get_industry_template(industry)
                 clause_library_str = (
                     f"\nUse the following industry-specific clauses from our pre-approved Clause Library as references/starters:\n"
                     f"Revision Clauses: {json.dumps(clauses.revision)}\n"
                     f"Payment Clauses: {json.dumps(clauses.payment)}\n"
                     f"Out of Scope Clauses: {json.dumps(clauses.out_of_scope)}\n"
+                    f"Client Responsibility Clauses: {json.dumps(clauses.client_responsibilities)}\n"
                     f"IP Ownership Clauses: {json.dumps(clauses.ip_ownership)}\n"
                     f"Change Request Clauses: {json.dumps(clauses.change_request)}\n"
                     f"Timeline Clauses: {json.dumps(clauses.timeline)}\n"
+                    f"Hidden Scope Traps To Protect Against: {json.dumps(template.hidden_scope_traps)}\n"
                 )
             except Exception as e:
                 logger.warning(f"[A5] Failed to load clause library context for prompt enrichment: {e}")

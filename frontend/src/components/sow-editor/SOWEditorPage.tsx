@@ -23,6 +23,7 @@ import {
   updateSOW,
 } from "@/lib/api/sows";
 import { useApiAuth } from "@/lib/use-api-client";
+import { trackEvent } from "@/lib/analytics";
 import {
   fallbackEditorSow,
   fallbackRisks,
@@ -208,6 +209,11 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
       toast.success("Changes saved", {
         description: "Section updates were synchronized with the backend.",
       });
+      trackEvent("sow_edited", {
+        workspace_id: auth.workspaceId,
+        sow_id: sowId,
+        section_key: sectionKey,
+      });
       return true;
     } catch (saveError) {
       setSections(sections);
@@ -312,6 +318,12 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
         toast.success("PDF export queued", {
           description: "The worker is generating a private PDF export. Refresh the document shortly for the signed download link.",
         });
+        trackEvent("pdf_exported", {
+          workspace_id: auth.workspaceId,
+          sow_id: sowId,
+          export_id: response.export_id,
+          status: "queued",
+        });
         return;
       }
       toast.success("PDF Generated Successfully", {
@@ -321,10 +333,21 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
           onClick: () => {
             const url = response.download_url ?? response.pdf_url;
             if (url) {
+              trackEvent("signed_url_requested", {
+                workspace_id: auth.workspaceId,
+                sow_id: sowId,
+                export_id: response.export_id,
+              });
               window.open(url, "_blank", "noopener,noreferrer");
             }
           }
         }
+      });
+      trackEvent("pdf_exported", {
+        workspace_id: auth.workspaceId,
+        sow_id: sowId,
+        export_id: response.export_id,
+        status: response.status ?? "ready",
       });
     } catch (exportError) {
       toast.dismiss(toastId);
@@ -333,6 +356,12 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
           exportError instanceof Error
             ? exportError.message
             : "Could not generate a signed private PDF URL.",
+      });
+      trackEvent("generation_failed", {
+        workspace_id: auth.workspaceId,
+        sow_id: sowId,
+        action: "pdf_export",
+        reason: exportError instanceof Error ? exportError.message : "PDF export failed",
       });
     } finally {
       setIsExporting(false);
@@ -370,6 +399,11 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
           }
         } : undefined
       });
+      trackEvent("esign_sent", {
+        workspace_id: auth.workspaceId,
+        sow_id: sowId,
+        status: response.status,
+      });
       setSignatureOpen(false);
     } catch (signatureError) {
       toast.dismiss(toastId);
@@ -378,6 +412,12 @@ export function SOWEditorPage({ sowId }: SOWEditorPageProps) {
           signatureError instanceof Error
             ? signatureError.message
             : `Could not send signature request to ${recipientEmail}.`,
+      });
+      trackEvent("esign_sent", {
+        workspace_id: auth.workspaceId,
+        sow_id: sowId,
+        status: "failed",
+        reason: signatureError instanceof Error ? signatureError.message : "Signature request failed",
       });
       setSignatureOpen(false);
     } finally {

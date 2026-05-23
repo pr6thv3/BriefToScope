@@ -19,11 +19,13 @@ from app.api.routes_billing import router as billing_router
 from app.api.routes_admin import router as admin_router
 from app.api.routes_webhooks import router as webhooks_router
 from app.middleware.security import InMemoryRateLimitMiddleware, SecurityHeadersMiddleware
+from app.observability import init_sentry
 from app.utils.errors import BriefToScopeError
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
+init_sentry(settings)
 
 
 @asynccontextmanager

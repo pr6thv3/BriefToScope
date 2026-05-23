@@ -1,10 +1,13 @@
 import { Mail, ShieldCheck, Wrench } from "lucide-react";
 import { Brand } from "@/components/brand";
 
+const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@brieftoscope.com";
+const securityEmail = `security@${supportEmail.split("@")[1] || "brieftoscope.com"}`;
+
 const channels = [
-  { title: "Product support", description: "Questions about generation, editing, exports, signatures, billing, or workspace setup.", icon: Mail, value: "support@brieftoscope.com" },
-  { title: "Security reports", description: "Report vulnerabilities or sensitive access issues through the private security channel.", icon: ShieldCheck, value: "security@brieftoscope.com" },
-  { title: "Operational status", description: "For incidents, contact support with the affected workspace, route, and approximate time window.", icon: Wrench, value: "support@brieftoscope.com" },
+  { title: "Product support", description: "Questions about generation, editing, exports, signatures, billing, or workspace setup.", icon: Mail, value: supportEmail },
+  { title: "Security reports", description: "Report vulnerabilities or sensitive access issues through the private security channel.", icon: ShieldCheck, value: securityEmail },
+  { title: "Operational status", description: "For incidents, contact support with the affected workspace, route, and approximate time window.", icon: Wrench, value: supportEmail },
 ];
 
 export default function SupportPage() {

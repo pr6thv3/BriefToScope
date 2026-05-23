@@ -203,9 +203,13 @@ export function LandingPage() {
         </section>
 
         <footer className="relative z-10 mx-auto flex max-w-6xl flex-col gap-4 border-t border-white/10 px-5 py-6 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
-          <div className="flex gap-5">
-            <a href="#privacy">Privacy Policy</a>
-            <a href="#terms">Terms of Service</a>
+          <div className="flex flex-wrap gap-5">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/ai-disclosure">AI disclosure</Link>
+            <Link href="/data-retention">Data retention</Link>
+            <Link href="/refund-policy">Refunds</Link>
+            <Link href="/support">Support</Link>
           </div>
           <div className="flex items-center gap-2">
             <FileText className="size-4" aria-hidden="true" />

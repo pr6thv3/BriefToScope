@@ -6,6 +6,7 @@ import { LiveGenerationCanvas } from "./LiveGenerationCanvas";
 import { useAppAuth } from "@/components/auth/AppAuthProvider";
 import { useApiClient } from "@/lib/use-api-client";
 import { sampleTranscript, industries, tones } from "@/lib/demo";
+import { trackEvent } from "@/lib/analytics";
 import { contentToSections } from "@/lib/sow";
 import type { GenerateSOWResponse, GenerationStep, SOWDetail } from "@/lib/types";
 
@@ -50,6 +51,11 @@ export function GenerateWorkspace() {
     if (!auth.can("sow:generate")) {
       setStatus("error");
       setErrorMsg("Your workspace role cannot generate SOWs.");
+      trackEvent("quota_reached", {
+        reason: "role_denied",
+        workspace_id: auth.workspaceId,
+        action: "generation",
+      });
       return;
     }
 
@@ -90,6 +96,10 @@ export function GenerateWorkspace() {
     }, 1500);
 
     try {
+      trackEvent("generation_started", {
+        workspace_id: auth.workspaceId,
+        industry: submitPayload.industry,
+      });
       const generationPayload = {
         transcript_text: submitPayload.transcript,
         industry: submitPayload.industry,
@@ -117,6 +127,10 @@ export function GenerateWorkspace() {
       setSteps(prev => prev.map(s => ({ ...s, status: "complete" })));
       setResult(response);
       setStatus("completed");
+      trackEvent("generation_completed", {
+        workspace_id: auth.workspaceId,
+        sow_id: response.sow_id,
+      });
 
     } catch (err) {
       if (timerRef.current) window.clearInterval(timerRef.current);
@@ -130,6 +144,11 @@ export function GenerateWorkspace() {
       });
       setErrorMsg(err instanceof Error ? err.message : "Generation failed.");
       setStatus("error");
+      const message = err instanceof Error ? err.message : "Generation failed.";
+      trackEvent(message.toLowerCase().includes("quota") ? "quota_reached" : "generation_failed", {
+        workspace_id: auth.workspaceId,
+        reason: message,
+      });
     }
   };
 

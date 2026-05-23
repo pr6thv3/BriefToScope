@@ -1,0 +1,469 @@
+{
+  "summary": {
+    "generated_at": "2026-05-23T11:49:24.548462+00:00",
+    "mode": "transcript_baseline",
+    "sample_count": 20,
+    "dimension_averages": {
+      "clarity": 80.4,
+      "deliverable_specificity": 76.8,
+      "timeline_completeness": 64.4,
+      "payment_schedule_presence": 64.6,
+      "client_responsibilities": 62.6,
+      "revision_policy": 61.4,
+      "acceptance_criteria": 57.4,
+      "risk_detection": 75.4
+    },
+    "overall_average": 67.9
+  },
+  "results": [
+    {
+      "sample_id": "web_design_01",
+      "industry": "Web Design",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 79,
+        "client_responsibilities": 71,
+        "revision_policy": 71,
+        "acceptance_criteria": 55,
+        "risk_detection": 60
+      },
+      "overall": 70.0,
+      "expected_risks": [
+        "seo_mentioned_not_scoped",
+        "client_assets_missing"
+      ],
+      "detected_risks": [
+        "payment_milestone_missing",
+        "seo_mentioned_not_scoped"
+      ]
+    },
+    {
+      "sample_id": "web_design_02",
+      "industry": "Web Design",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 72,
+        "deliverable_specificity": 84,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 55,
+        "revision_policy": 55,
+        "acceptance_criteria": 55,
+        "risk_detection": 71
+      },
+      "overall": 63.4,
+      "expected_risks": [
+        "copywriting_responsibility_unclear",
+        "third_party_tools_unspecified",
+        "custom_animation_complexity_unclear",
+        "timeline_dependency_missing"
+      ],
+      "detected_risks": [
+        "custom_animation_complexity_unclear",
+        "third_party_tools_unspecified"
+      ]
+    },
+    {
+      "sample_id": "branding_01",
+      "industry": "Branding",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 88,
+        "deliverable_specificity": 68,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 71,
+        "client_responsibilities": 63,
+        "revision_policy": 63,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 69.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "acceptance_criteria_missing",
+        "ownership_ip_unclear",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "branding_02",
+      "industry": "Branding",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 88,
+        "deliverable_specificity": 68,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 63,
+        "revision_policy": 55,
+        "acceptance_criteria": 55,
+        "risk_detection": 81
+      },
+      "overall": 66.6,
+      "expected_risks": [
+        "ownership_ip_unclear",
+        "acceptance_criteria_missing",
+        "timeline_dependency_missing"
+      ],
+      "detected_risks": [
+        "acceptance_criteria_missing",
+        "ownership_ip_unclear"
+      ]
+    },
+    {
+      "sample_id": "seo_01",
+      "industry": "SEO",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 92,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 71,
+        "client_responsibilities": 55,
+        "revision_policy": 55,
+        "acceptance_criteria": 63,
+        "risk_detection": 85
+      },
+      "overall": 70.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "payment_milestone_missing",
+        "seo_mentioned_not_scoped"
+      ]
+    },
+    {
+      "sample_id": "seo_02",
+      "industry": "SEO",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 63,
+        "revision_policy": 71,
+        "acceptance_criteria": 55,
+        "risk_detection": 81
+      },
+      "overall": 69.6,
+      "expected_risks": [
+        "seo_mentioned_not_scoped",
+        "payment_milestone_missing",
+        "timeline_dependency_missing"
+      ],
+      "detected_risks": [
+        "payment_milestone_missing",
+        "seo_mentioned_not_scoped"
+      ]
+    },
+    {
+      "sample_id": "marketing_01",
+      "industry": "Marketing",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 84,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 71,
+        "client_responsibilities": 55,
+        "revision_policy": 71,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 71.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "marketing_02",
+      "industry": "Marketing",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 72,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 55,
+        "revision_policy": 55,
+        "acceptance_criteria": 55,
+        "risk_detection": 63
+      },
+      "overall": 61.4,
+      "expected_risks": [
+        "client_assets_missing",
+        "timeline_dependency_missing"
+      ],
+      "detected_risks": [
+        "client_assets_missing"
+      ]
+    },
+    {
+      "sample_id": "copywriting_01",
+      "industry": "Copywriting",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 71,
+        "revision_policy": 71,
+        "acceptance_criteria": 63,
+        "risk_detection": 85
+      },
+      "overall": 71.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "copywriting_responsibility_unclear",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "copywriting_02",
+      "industry": "Copywriting",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 72,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 55,
+        "revision_policy": 55,
+        "acceptance_criteria": 55,
+        "risk_detection": 60
+      },
+      "overall": 61.0,
+      "expected_risks": [
+        "unlimited_revisions_implied",
+        "seo_mentioned_not_scoped"
+      ],
+      "detected_risks": [
+        "copywriting_responsibility_unclear",
+        "seo_mentioned_not_scoped"
+      ]
+    },
+    {
+      "sample_id": "consulting_01",
+      "industry": "Consulting",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 84,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 71,
+        "client_responsibilities": 71,
+        "revision_policy": 71,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 72.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "consulting_02",
+      "industry": "Consulting",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 88,
+        "deliverable_specificity": 68,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 71,
+        "revision_policy": 55,
+        "acceptance_criteria": 55,
+        "risk_detection": 81
+      },
+      "overall": 68.6,
+      "expected_risks": [
+        "acceptance_criteria_missing",
+        "timeline_dependency_missing",
+        "payment_milestone_missing"
+      ],
+      "detected_risks": [
+        "acceptance_criteria_missing",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "app_development_01",
+      "industry": "App Development",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 84,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 55,
+        "revision_policy": 63,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 69.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "ownership_ip_unclear",
+        "payment_milestone_missing",
+        "third_party_tools_unspecified"
+      ]
+    },
+    {
+      "sample_id": "app_development_02",
+      "industry": "App Development",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 76,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 63,
+        "revision_policy": 55,
+        "acceptance_criteria": 63,
+        "risk_detection": 81
+      },
+      "overall": 69.6,
+      "expected_risks": [
+        "third_party_tools_unspecified",
+        "payment_milestone_missing",
+        "acceptance_criteria_missing"
+      ],
+      "detected_risks": [
+        "payment_milestone_missing",
+        "third_party_tools_unspecified"
+      ]
+    },
+    {
+      "sample_id": "video_01",
+      "industry": "Video Production",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 68,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 79,
+        "client_responsibilities": 71,
+        "revision_policy": 71,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 71.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "ownership_ip_unclear",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "video_02",
+      "industry": "Video Production",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 72,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 55,
+        "revision_policy": 63,
+        "acceptance_criteria": 55,
+        "risk_detection": 35
+      },
+      "overall": 59.9,
+      "expected_risks": [
+        "unlimited_revisions_implied",
+        "ownership_ip_unclear"
+      ],
+      "detected_risks": []
+    },
+    {
+      "sample_id": "web_design_03",
+      "industry": "Web Design",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 88,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 79,
+        "client_responsibilities": 79,
+        "revision_policy": 55,
+        "acceptance_criteria": 63,
+        "risk_detection": 85
+      },
+      "overall": 74.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "acceptance_criteria_missing",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "branding_03",
+      "industry": "Branding",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 68,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 55,
+        "revision_policy": 63,
+        "acceptance_criteria": 55,
+        "risk_detection": 85
+      },
+      "overall": 66.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "ownership_ip_unclear",
+        "payment_milestone_missing"
+      ]
+    },
+    {
+      "sample_id": "marketing_03",
+      "industry": "Marketing",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 88,
+        "deliverable_specificity": 76,
+        "timeline_completeness": 60,
+        "payment_schedule_presence": 63,
+        "client_responsibilities": 63,
+        "revision_policy": 55,
+        "acceptance_criteria": 63,
+        "risk_detection": 85
+      },
+      "overall": 69.1,
+      "expected_risks": [],
+      "detected_risks": [
+        "acceptance_criteria_missing",
+        "payment_milestone_missing",
+        "third_party_tools_unspecified"
+      ]
+    },
+    {
+      "sample_id": "app_development_03",
+      "industry": "App Development",
+      "mode": "transcript_baseline",
+      "scores": {
+        "clarity": 80,
+        "deliverable_specificity": 84,
+        "timeline_completeness": 68,
+        "payment_schedule_presence": 55,
+        "client_responsibilities": 63,
+        "revision_policy": 55,
+        "acceptance_criteria": 63,
+        "risk_detection": 45
+      },
+      "overall": 64.1,
+      "expected_risks": [
+        "third_party_tools_unspecified"
+      ],
+      "detected_risks": []
+    }
+  ]
+}

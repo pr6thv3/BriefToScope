@@ -220,6 +220,7 @@ class SOWComposer:
                     f"Default Sections Order: {json.dumps(template.default_sections)}\n"
                     f"Acceptance Criteria Examples: {json.dumps(template.acceptance_criteria)}\n"
                     f"Timeline Assumptions Examples: {json.dumps(template.timeline_assumptions)}\n"
+                    f"Hidden Scope Traps To Address Or Exclude: {json.dumps(template.hidden_scope_traps)}\n"
                 )
             except Exception as e:
                 logger.warning(f"[A6] Failed to load template context for prompt enrichment: {e}")

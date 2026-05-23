@@ -32,20 +32,50 @@
     {
       "label": "Monthly Retainer Billing",
       "milestones": [
-        { "percentage": "100%", "condition": "Due monthly in advance on the 1st of each service month" }
+        {
+          "percentage": "100%",
+          "condition": "Due monthly in advance on the 1st of each service month"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Late client asset delivery pauses feed",
-      "trigger_terms": ["images", "assets", "product photos", "late delivery"],
+      "trigger_terms": [
+        "images",
+        "assets",
+        "product photos",
+        "late delivery"
+      ],
       "recommended_fix": "Add clause that post calendar will repeat evergreen posts if assets are not received 5 days before scheduled date."
     },
     {
       "risk": "Platform guideline changes affect visibility",
-      "trigger_terms": ["guidelines", "banned terms", "algorithm change"],
+      "trigger_terms": [
+        "guidelines",
+        "banned terms",
+        "algorithm change"
+      ],
       "recommended_fix": "State that algorithm changes are out of agency control and reports will focus on direct engagement metrics."
+    },
+    {
+      "risk": "Community management assumed",
+      "trigger_terms": [
+        "reply to comments",
+        "dm",
+        "community management"
+      ],
+      "recommended_fix": "Define whether engagement, moderation, and inbox management are included."
+    },
+    {
+      "risk": "Paid social management unclear",
+      "trigger_terms": [
+        "boost posts",
+        "ads manager",
+        "paid social"
+      ],
+      "recommended_fix": "Separate organic content scope from paid campaign management and ad spend."
     }
   ],
   "client_responsibilities": [
@@ -79,10 +109,18 @@
       "Final visual assets belong to the client, while analytical strategy templates remain the property of the agency."
     ],
     "change_request": [
-      "Requests to add additional emergency posts outside the monthly calendar scope will require separate fees."
+      "Requests to add additional emergency posts outside the monthly calendar scope will require separate fees.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Posting schedules may shift temporarily to align with platform outages or major industry events."
+      "Posting schedules may shift temporarily to align with platform outages or major industry events.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Community management expected beyond publishing or content calendar scope",
+    "Realtime trend responses requested without retainer allocation",
+    "Paid media management assumed inside organic content package",
+    "Client approvals delayed until scheduled publishing windows are missed"
+  ]
 }

@@ -63,6 +63,11 @@ DEFAULT_CONSULTING_TEMPLATE = {
         "Presentation of findings completed",
         "Client signs off on completion of milestones"
     ],
+    "hidden_scope_traps": [
+        "Advisory work being treated as implementation",
+        "Undefined stakeholder availability",
+        "Decision-making authority not assigned"
+    ],
     "clause_library": {
         "revision": [
             "Each major deliverable includes up to two rounds of revisions unless otherwise specified.",

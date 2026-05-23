@@ -34,22 +34,58 @@
     {
       "label": "Sprint Milestones 30/40/30",
       "milestones": [
-        { "percentage": "30%", "condition": "Due before technical architecture setup" },
-        { "percentage": "40%", "condition": "Due upon staging release alpha launch" },
-        { "percentage": "30%", "condition": "Due prior to production server deployment" }
+        {
+          "percentage": "30%",
+          "condition": "Due before technical architecture setup"
+        },
+        {
+          "percentage": "40%",
+          "condition": "Due upon staging release alpha launch"
+        },
+        {
+          "percentage": "30%",
+          "condition": "Due prior to production server deployment"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Legacy API dependency is unstable",
-      "trigger_terms": ["legacy api", "external database", "third-party integrations"],
+      "trigger_terms": [
+        "legacy api",
+        "external database",
+        "third-party integrations"
+      ],
       "recommended_fix": "Specify a mock API implementation path if the legacy API is down for over 48 hours."
     },
     {
       "risk": "Feature scope creep mid-sprint",
-      "trigger_terms": ["sprint adjustment", "scope changes", "extra feature"],
+      "trigger_terms": [
+        "sprint adjustment",
+        "scope changes",
+        "extra feature"
+      ],
       "recommended_fix": "Any changes to agreed specifications will be queued for post-launch sprint updates."
+    },
+    {
+      "risk": "Feature creep during QA",
+      "trigger_terms": [
+        "while testing",
+        "quick feature",
+        "small change"
+      ],
+      "recommended_fix": "Separate defect fixes from net-new feature requests during UAT."
+    },
+    {
+      "risk": "Third-party API dependency unclear",
+      "trigger_terms": [
+        "api",
+        "webhook",
+        "integration",
+        "oauth"
+      ],
+      "recommended_fix": "List integrations, credentials, rate limits, sandbox access, and vendor responsibilities."
     }
   ],
   "client_responsibilities": [
@@ -83,10 +119,18 @@
       "Ownership of custom-developed codebase transfers to the client upon full payment clearance."
     ],
     "change_request": [
-      "Approved change requests will be billed at $175/hr and may impact the project delivery date."
+      "Approved change requests will be billed at $175/hr and may impact the project delivery date.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Delays in resolving integration credential errors will automatically push subsequent milestones."
+      "Delays in resolving integration credential errors will automatically push subsequent milestones.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Feature requests added during QA as bug fixes",
+    "Third-party API limits or sandbox credentials unavailable",
+    "App store, compliance, or security review assumed in fixed build scope",
+    "Post-launch support and infrastructure ownership left undefined"
+  ]
 }

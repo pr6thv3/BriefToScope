@@ -1,152 +1,124 @@
 # BriefToScope Architecture
 
-## Executive Summary
+## Summary
 
-BriefToScope is a multi-tenant SaaS platform for AI-assisted scope intelligence. The system is organized around a protected agency workspace, a structured AI generation pipeline, editable SOW sections, risk intelligence, exports, e-signature handoff, and subscription gates.
+BriefToScope is a multi-tenant SaaS for agency scope intelligence. PostgreSQL is the product authority for workspaces, roles, billing state, quotas, templates, SOWs, audit logs, and jobs. Clerk owns identity/session only. PayPal processes subscription approval and events, while BriefToScope owns in-app billing UX and feature gates.
 
-The highest-trust production path is:
+## Layers
 
-1. Store user/workspace permissions in PostgreSQL.
-2. Generate structured SOW data before rendering Markdown/PDF.
-3. Persist section-level SOW content and risk flags.
-4. Run expensive AI/PDF/e-sign work through durable jobs.
-5. Audit sensitive actions.
-6. Keep client documents private and serve with signed links.
+### Presentation
+
+- Public: `/`, `/pricing`, `/sign-in`, `/sign-up`, `/privacy`, `/terms`, `/ai-disclosure`, `/data-retention`, `/refund-policy`, `/support`, public share/sign routes.
+- Protected: `/onboarding`, `/dashboard`, `/generate`, `/sow/[id]`, `/templates`, `/settings`, `/settings/team`, `/settings/billing`, `/admin`.
+- Next.js middleware protects app routes through Clerk.
+- App pages use Clerk JWTs plus `X-Workspace-Id` for API calls.
+- Client-side RBAC hides unavailable actions, but backend permission checks remain authoritative.
+
+### Auth And Tenancy
+
+- Clerk verifies session identity.
+- `/api/auth/sync` mirrors Clerk users into `users`, ensures a default workspace, and returns the active workspace role.
+- `RequestContext` resolves `user_id`, `org_id`, `role`, `plan`, and `subscription_status` for every protected FastAPI route.
+- Roles: `owner`, `admin`, `member`, `reviewer`, `client_viewer`.
+
+### Business Logic
+
+FastAPI routers stay thin and call domain services:
+
+- `auth`, `workspaces`, `projects`, `generations`, `sows`, `sow_sections`, `templates`, `billing`, `webhooks`, `admin`
+- Services: AI orchestration, validation, clause intelligence, SOW persistence, PDF export, storage, PayPal billing, usage, audit logs, e-sign, worker jobs.
+- Expensive actions run through quotas first: generation, PDF export, e-signature.
+- Production generation and export are job-oriented; local/demo can use fallbacks only when explicitly enabled.
+
+### AI
+
+The pipeline remains A1-A7:
+
+1. Transcript Cleaner
+2. Brief Extractor
+3. Scope Builder
+4. Risk Detector
+5. Clause Generator
+6. SOW Composer
+7. Quality Checker
+
+Production rule: structured JSON is canonical. Markdown/PDF are render outputs. Deterministic validation checks timeline, payment, deliverables, revision policy, client responsibilities, acceptance criteria, and vague/risky language before the SOW is treated as export-ready.
+
+The risk engine includes rule coverage for unlimited revisions, SEO ambiguity, copywriting ownership, missing assets, timeline dependency, third-party tools, animation complexity, payment milestones, acceptance criteria, and ownership/IP.
+
+### Data And Security
+
+- Supabase PostgreSQL stores tenant data.
+- RLS policies provide defense in depth.
+- Frontend does not write directly to Supabase tables.
+- Supabase service role stays backend-only.
+- PDF exports use private `sow-pdfs` storage paths and short-lived signed URLs.
+- PayPal webhooks are signature-verified outside demo mode and stored idempotently.
+- Audit logs record generation, edits, exports, signed URL requests, signatures, billing, and workspace actions.
+
+## Deployment
+
+- Vercel frontend
+- Render FastAPI web service
+- Render Celery worker service
+- Upstash Redis broker
+- Supabase DB/Storage
+- PayPal Subscriptions
+- Sentry/PostHog
+- Optional Langfuse/Helicone tracing hooks
 
 ## System Diagram
 
 ```mermaid
 flowchart TB
-    subgraph Web["Presentation Layer"]
-      Public["Landing / Pricing / Legal"]
-      App["Dashboard / Generate / SOW Editor"]
-      Share["Public Share + Sign Links"]
-    end
+  subgraph Frontend["Next.js"]
+    Public["Public Pages"]
+    App["Protected Workspace App"]
+    Editor["SOW Editor + Risk Sidebar"]
+  end
 
-    subgraph API["FastAPI Business Layer"]
-      Auth["Clerk JWT Verification"]
-      RBAC["Workspace Membership Authorization"]
-      SOW["SOW + Section Services"]
-      Billing["PayPal Billing Service"]
-      Audit["Audit Log Service"]
-      Jobs["Generation Job Service"]
-    end
+  subgraph Backend["FastAPI"]
+    Context["RequestContext"]
+    RBAC["RBAC + Quotas"]
+    Billing["PayPal Billing"]
+    Jobs["Generation/PDF Jobs"]
+    Audit["Audit Logs"]
+  end
 
-    subgraph Async["Background Workers"]
-      Celery["Celery"]
-      AI["A1-A7 AI Pipeline"]
-      PDF["Playwright PDF Export"]
-      Email["Email / Notifications"]
-    end
+  subgraph Workers["Celery"]
+    AI["AI Generation"]
+    PDF["PDF Export"]
+    Email["Email/Billing Jobs"]
+  end
 
-    subgraph Data["Data + Security Layer"]
-      Postgres["Supabase PostgreSQL"]
-      RLS["Organization RLS Policies"]
-      Storage["Private Supabase Storage"]
-      Redis["Redis Broker / Cache"]
-    end
+  subgraph Data["Supabase + Redis"]
+    PG["PostgreSQL"]
+    RLS["RLS Policies"]
+    Files["Private Storage"]
+    Queue["Redis Queues"]
+  end
 
-    Public --> App
-    App --> API
-    Share --> API
-    Auth --> RBAC
-    API --> Postgres
-    API --> Storage
-    Jobs --> Celery
-    Celery --> AI
-    Celery --> PDF
-    Celery --> Email
-    Celery --> Redis
-    Postgres --> RLS
+  Public --> App
+  App --> Context
+  Editor --> Backend
+  Context --> RBAC
+  RBAC --> PG
+  Backend --> Files
+  Backend --> Billing
+  Backend --> Jobs
+  Jobs --> Queue
+  Queue --> Workers
+  Workers --> AI
+  Workers --> PDF
+  PG --> RLS
+  Backend --> Audit
 ```
 
-## Frontend
+## Current Boundaries
 
-- Framework: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion.
-- Public routes: `/`, `/pricing`, `/sign-in`, `/sign-up`, `/share/sow/[token]`, `/sign/[token]`.
-- Protected routes: `/dashboard`, `/generate`, `/sow/[id]`, `/templates`, `/settings`, `/settings/team`, `/settings/billing`, `/admin`.
-- Current auth UI is route-shell ready. Clerk UI integration still needs final wiring before production.
-
-## Backend
-
-FastAPI routers are split by product domain:
-
-- `auth`: user/workspace sync
-- `workspaces`: organizations, members, invites, brand settings
-- `generations`: job creation, job status, SSE-style event stream
-- `sows` and `sow_sections`: document CRUD, section edits, regeneration, risk audit
-- `billing`: plans, PayPal checkout, usage summary
-- `webhooks`: PayPal and DocuSign provider callbacks
-- `templates`: industry templates and clause intelligence
-- `admin`: operational readiness surface
-
-Heavy work belongs in Celery workers. Local/demo mode can fall back to FastAPI background tasks.
-
-## AI Pipeline
-
-The current pipeline is:
-
-1. A1 Transcript Cleaner
-2. A2 Brief Extractor
-3. A3 Scope Builder
-4. A4 Risk Detector
-5. A5 Clause Generator
-6. A6 SOW Composer
-7. A7 Quality Checker
-
-Production rule: persist structured JSON first, then render Markdown/PDF. Do not let final Markdown be the only canonical data representation.
-
-## Data Model
-
-Core production tables:
-
-- `users`
-- `organizations`
-- `organization_members`
-- `projects`
-- `transcripts`
-- `sows`
-- `sow_sections`
-- `sow_versions`
-- `sow_risk_flags`
-- `templates`
-- `clause_library`
-- `brand_settings`
-- `pdf_exports`
-- `esign_requests`
-- `billing_customers`
-- `subscriptions`
-- `usage_events`
-- `audit_logs`
-- `generation_jobs`
-- `generation_job_events`
-- `webhook_events`
-
-Apply `database/production_foundation.sql`, then `database/production_rls_policies.sql`.
-
-## Security Boundaries
-
-- Frontend never writes directly to Supabase data tables in MVP.
-- Backend verifies Clerk JWTs and checks PostgreSQL workspace membership.
-- Supabase RLS acts as defense in depth.
-- PayPal webhooks require signature verification outside demo mode.
-- PDF exports should be private storage objects with signed URLs.
-- Audit logs are required for generation, edit, export, share, signature send, billing, and membership actions.
-
-## Deployment Topology
-
-- Frontend: Vercel
-- API: Render, Railway, Fly.io, or containerized cloud runtime
-- Worker: separate Celery process with same backend image
-- Redis: Upstash or managed Redis
-- Database/storage: Supabase
-- DNS/WAF: Cloudflare
-- Monitoring: Sentry, PostHog, Langfuse/Helicone
-
-## Known Architecture Gaps
-
-- Clerk UI/session integration is not fully wired in frontend.
-- PayPal subscription plan IDs and live webhook registration must be configured.
-- Celery worker deployment exists in code but needs hosting process configuration.
-- PDF storage should be switched fully to private buckets and signed URLs before paid users.
-- Admin route needs strict allowlist enforcement before public deployment.
+- No marketplace.
+- No vector memory yet.
+- No enterprise SSO yet.
+- No multiplayer editor.
+- No Kubernetes.
+- PayPal remains the payment processor.

@@ -31,21 +31,54 @@
     {
       "label": "50/50 Engagement Milestones",
       "milestones": [
-        { "percentage": "50%", "condition": "Due upon execution of agreement" },
-        { "percentage": "50%", "condition": "Due upon delivery of final deck" }
+        {
+          "percentage": "50%",
+          "condition": "Due upon execution of agreement"
+        },
+        {
+          "percentage": "50%",
+          "condition": "Due upon delivery of final deck"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Stakeholder meeting cancellations",
-      "trigger_terms": ["meeting cancellation", "reschedule", "availability"],
+      "trigger_terms": [
+        "meeting cancellation",
+        "reschedule",
+        "availability"
+      ],
       "recommended_fix": "Add clause that meetings cancelled with less than 24 hours notice count against consulting hour limits."
     },
     {
       "risk": "Scope expansion of data queries",
-      "trigger_terms": ["extra audit", "more data", "unplanned queries"],
+      "trigger_terms": [
+        "extra audit",
+        "more data",
+        "unplanned queries"
+      ],
       "recommended_fix": "Specify a cap on data analysis items included in the primary audit."
+    },
+    {
+      "risk": "Implementation expected after strategy",
+      "trigger_terms": [
+        "implement",
+        "execute",
+        "build it after",
+        "hands on"
+      ],
+      "recommended_fix": "Clarify that implementation support requires a separate SOW."
+    },
+    {
+      "risk": "Stakeholder access dependency missing",
+      "trigger_terms": [
+        "interview",
+        "workshop",
+        "stakeholders"
+      ],
+      "recommended_fix": "Define required stakeholder availability and effects of missed sessions."
     }
   ],
   "client_responsibilities": [
@@ -79,10 +112,18 @@
       "Methodology frameworks remain agency property, while custom insights transfer to client on payment."
     ],
     "change_request": [
-      "Requests to add additional team interviews require a proportional scope adjustment fee."
+      "Requests to add additional team interviews require a proportional scope adjustment fee.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Project timelines depend on timely client feedback, approvals, and asset delivery."
+      "Project timelines depend on timely client feedback, approvals, and asset delivery.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Advisory recommendations being treated as implementation work",
+    "Stakeholder interviews expanding beyond agreed participants",
+    "Ongoing advisory support expected after final report delivery",
+    "Client decision authority and data access not assigned"
+  ]
 }

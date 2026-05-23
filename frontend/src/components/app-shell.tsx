@@ -12,15 +12,18 @@ import {
   Settings,
   Library,
   CreditCard,
+  CheckCircle2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Brand } from "@/components/brand";
+import { useAppAuth } from "@/components/auth/AppAuthProvider";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/onboarding", label: "Onboarding", icon: CheckCircle2 },
   { href: "/generate", label: "Generate", icon: Bolt },
   { href: "/sow/demo-001", label: "Documents", icon: FileText },
   { href: "/templates", label: "Templates", icon: Library },
@@ -30,6 +33,27 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const auth = useAppAuth();
+  const workspaceName = auth.workspace?.name ?? "Workspace";
+  const roleLabel = auth.role ? auth.role.replace("_", " ") : "member";
+  const initials = workspaceName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("") || "BT";
+  const visibleNavItems = navItems.filter((item) => {
+    if (!auth.role) {
+      return true;
+    }
+    if (item.href.startsWith("/settings/billing")) {
+      return auth.can("billing:manage");
+    }
+    if (item.href.startsWith("/generate")) {
+      return auth.can("sow:generate");
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -42,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         </div>
         <nav className="flex flex-1 flex-col gap-2 px-3 py-4">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const active =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -65,11 +89,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
             <Avatar className="size-8">
-              <AvatarFallback>AJ</AvatarFallback>
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">Alex Johnson</p>
-              <p className="truncate text-xs text-slate-400">Agency workspace</p>
+              <p className="truncate text-sm font-medium">{workspaceName}</p>
+              <p className="truncate text-xs capitalize text-slate-400">{roleLabel}</p>
             </div>
             <ChevronDown className="size-4 text-slate-400" aria-hidden="true" />
           </div>
@@ -93,10 +117,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Bell data-icon="inline-start" />
             </Button>
             <Avatar className="size-8">
-              <AvatarFallback>AJ</AvatarFallback>
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <span className="hidden text-sm font-medium md:block">
-              Alex Johnson
+              {workspaceName}
             </span>
             <ChevronDown className="size-4 text-slate-500" aria-hidden="true" />
           </div>

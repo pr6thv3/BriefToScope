@@ -33,20 +33,50 @@
     {
       "label": "Monthly SEO retainer",
       "milestones": [
-        { "percentage": "100%", "condition": "Due recurringly on the 1st of each service month" }
+        {
+          "percentage": "100%",
+          "condition": "Due recurringly on the 1st of each service month"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Developer execution backlog stalls ranking",
-      "trigger_terms": ["developer", "cms access", "site updates", "implementation delay"],
+      "trigger_terms": [
+        "developer",
+        "cms access",
+        "site updates",
+        "implementation delay"
+      ],
       "recommended_fix": "State that ranking changes depend on the client developer implementing technical recommendations within 14 days."
     },
     {
       "risk": "Search algorithm update alters ranking",
-      "trigger_terms": ["algorithm update", "google update", "indexing change"],
+      "trigger_terms": [
+        "algorithm update",
+        "google update",
+        "indexing change"
+      ],
       "recommended_fix": "Add standard search disclaimer explaining that indexing shifts are determined by search engines."
+    },
+    {
+      "risk": "Ranking guarantee implied",
+      "trigger_terms": [
+        "guarantee ranking",
+        "page one",
+        "rank first"
+      ],
+      "recommended_fix": "State that rankings are not guaranteed and depend on search engines, competition, and implementation."
+    },
+    {
+      "risk": "Content production not scoped",
+      "trigger_terms": [
+        "blog posts",
+        "landing page copy",
+        "content calendar"
+      ],
+      "recommended_fix": "Separate SEO strategy from content writing and implementation services."
     }
   ],
   "client_responsibilities": [
@@ -80,10 +110,18 @@
       "Keyword datasets and analysis reports become client property upon receipt of monthly retainer payment."
     ],
     "change_request": [
-      "Requests to add additional tracking domains require a proportional retainer upgrade."
+      "Requests to add additional tracking domains require a proportional retainer upgrade.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Ranking timelines assume technical changes are deployed within the agreed timelines."
+      "Ranking timelines assume technical changes are deployed within the agreed timelines.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "SEO results implied as guaranteed rankings",
+    "Technical recommendations blocked by client developer backlog",
+    "Blog/content production expected inside audit or retainer scope",
+    "Extra domains, markets, or product categories added without fee change"
+  ]
 }

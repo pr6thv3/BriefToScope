@@ -15,7 +15,8 @@ export type RiskFlag = {
   severity: RiskSeverity;
   title: string;
   description: string;
-  suggested_fix: string;
+  suggested_fix?: string;
+  recommended_fix?: string;
 };
 
 export type SOWStatus = "draft" | "ready" | "sent" | "signed" | "final";

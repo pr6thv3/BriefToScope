@@ -33,21 +33,53 @@
     {
       "label": "Flat Setup + Monthly Retainer",
       "milestones": [
-        { "percentage": "100%", "condition": "Campaign setup fee due upfront" },
-        { "percentage": "100%", "condition": "Retainer billed on the 1st of each campaign month" }
+        {
+          "percentage": "100%",
+          "condition": "Campaign setup fee due upfront"
+        },
+        {
+          "percentage": "100%",
+          "condition": "Retainer billed on the 1st of each campaign month"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Ad spend payment delays",
-      "trigger_terms": ["media spend", "ad account billing", "credit card limit"],
+      "trigger_terms": [
+        "media spend",
+        "ad account billing",
+        "credit card limit"
+      ],
       "recommended_fix": "Add clause that ad campaign stops if platform payment card fails."
     },
     {
       "risk": "Tracking pixel setup blockers",
-      "trigger_terms": ["tracking pixel", "conversions", "tag manager"],
+      "trigger_terms": [
+        "tracking pixel",
+        "conversions",
+        "tag manager"
+      ],
       "recommended_fix": "Client developers must place code snippets within 5 days of request."
+    },
+    {
+      "risk": "Media budget ownership unclear",
+      "trigger_terms": [
+        "ad spend",
+        "media budget",
+        "paid campaign"
+      ],
+      "recommended_fix": "State that media spend is paid directly by the client unless otherwise agreed."
+    },
+    {
+      "risk": "Performance guarantee implied",
+      "trigger_terms": [
+        "guaranteed leads",
+        "guarantee roas",
+        "viral"
+      ],
+      "recommended_fix": "Frame performance targets as goals and exclude guarantees outside agency control."
     }
   ],
   "client_responsibilities": [
@@ -81,10 +113,18 @@
       "Campaign strategy data remains agency property, while creatives transfer to client upon payment."
     ],
     "change_request": [
-      "Targeting updates and budget adjustments must be submitted in writing at least 72 hours before implementation."
+      "Targeting updates and budget adjustments must be submitted in writing at least 72 hours before implementation.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Platform compliance review times are out of agency control and may push campaign launches."
+      "Platform compliance review times are out of agency control and may push campaign launches.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Campaign creative volume increasing after strategy approval",
+    "Media spend, ad account setup, and tracking ownership left unclear",
+    "Landing page or copywriting work assumed outside listed deliverables",
+    "Performance guarantees implied without control over budget or traffic quality"
+  ]
 }

@@ -34,22 +34,59 @@
     {
       "label": "Standard 50/30/20",
       "milestones": [
-        { "percentage": "50%", "condition": "Due upon signing SOW" },
-        { "percentage": "30%", "condition": "Due on final concept selection" },
-        { "percentage": "20%", "condition": "Due before release of raw files" }
+        {
+          "percentage": "50%",
+          "condition": "Due upon signing SOW"
+        },
+        {
+          "percentage": "30%",
+          "condition": "Due on final concept selection"
+        },
+        {
+          "percentage": "20%",
+          "condition": "Due before release of raw files"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Subjective reviews delay project",
-      "trigger_terms": ["subjective", "taste", "opinion", "style preference"],
+      "trigger_terms": [
+        "subjective",
+        "taste",
+        "opinion",
+        "style preference"
+      ],
       "recommended_fix": "Incorporate structured visual feedback templates to keep reviews objective."
     },
     {
       "risk": "Naming conflicts or trademark overlap",
-      "trigger_terms": ["trademark", "availability check", "legal name"],
+      "trigger_terms": [
+        "trademark",
+        "availability check",
+        "legal name"
+      ],
       "recommended_fix": "Specify that naming is not legally vetted and trademark check is client responsibility."
+    },
+    {
+      "risk": "Source file handoff before payment",
+      "trigger_terms": [
+        "source files",
+        "figma files",
+        "ai files",
+        "raw files"
+      ],
+      "recommended_fix": "Tie source file release to final payment and list exactly which files transfer."
+    },
+    {
+      "risk": "Unlimited logo concepts implied",
+      "trigger_terms": [
+        "more concepts",
+        "try another direction",
+        "options until"
+      ],
+      "recommended_fix": "Define the number of included concepts and price additional directions separately."
     }
   ],
   "client_responsibilities": [
@@ -83,10 +120,18 @@
       "Intellectual property rights for the finalized logo transfer to the client upon final milestone payment clearance."
     ],
     "change_request": [
-      "Changes to primary layout requirements after layout sign-off require a formal design change order fee."
+      "Changes to primary layout requirements after layout sign-off require a formal design change order fee.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Timeline delays resulting from client review latency will push subsequent deliverable checkpoints."
+      "Timeline delays resulting from client review latency will push subsequent deliverable checkpoints.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "New logo directions requested after direction approval",
+    "Trademark or naming validation assumed to be included",
+    "Packaging, social, or campaign assets added after brand guide approval",
+    "Source file ownership requested before final payment"
+  ]
 }

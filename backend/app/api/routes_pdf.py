@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.dependencies import RequestContext, require_permission
 from app.models.schemas import PDFExportResponse
 from app.services.demo_data import get_fallback_risks, get_fallback_sow
+from app.services.audit_log_service import AuditLogService
 from app.services.pdf_service import PDFService
 from app.services.storage_service import StorageService
 from app.services.usage_service import UsageService
@@ -112,6 +113,14 @@ async def export_pdf(
             "pdf_export",
             metadata={"sow_id": sow_id, "export_id": result["export_id"]},
         )
+        await AuditLogService().record(
+            org_id=context.org_id,
+            actor_id=context.user_id,
+            action="pdf.exported",
+            entity_type="pdf_export",
+            entity_id=result["export_id"],
+            metadata={"sow_id": sow_id, "status": result.get("status", "ready")},
+        )
 
         return PDFExportResponse(
             success=True,
@@ -152,6 +161,14 @@ async def get_pdf_download_url(
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)
     download_url = await storage.create_signed_pdf_url(export["storage_path"], ttl_seconds=ttl_seconds)
     await storage.update_pdf_export_signed_expiry(export_id, expires_at.isoformat())
+    await AuditLogService().record(
+        org_id=context.org_id,
+        actor_id=context.user_id,
+        action="pdf.signed_url_requested",
+        entity_type="pdf_export",
+        entity_id=export_id,
+        metadata={"sow_id": sow_id, "ttl_seconds": ttl_seconds},
+    )
     return {
         "export_id": export_id,
         "download_url": download_url,

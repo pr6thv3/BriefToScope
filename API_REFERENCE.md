@@ -5,74 +5,34 @@ Base URL:
 - Local: `http://localhost:8000`
 - Production: `BACKEND_URL`
 
-Authentication:
+Protected routes require:
 
-- Protected routes expect `Authorization: Bearer <Clerk JWT>`.
-- Demo mode accepts `Bearer demo`.
-- Workspace-scoped routes may accept `X-Workspace-Id`.
+- `Authorization: Bearer <Clerk JWT>`
+- `X-Workspace-Id: <organization uuid>` when a workspace is active
+
+Demo auth is accepted only when `DEMO_MODE=true`.
 
 ## Health
 
 ### `GET /health`
 
-Returns API health and version metadata.
+Returns service health.
 
 ## Auth
 
 ### `POST /api/auth/sync`
 
-Synchronizes the authenticated Clerk user into PostgreSQL and ensures a default workspace.
-
-Response:
-
-```json
-{
-  "user": {},
-  "workspace": {}
-}
-```
-
-## Workspaces
-
-### `GET /api/workspaces`
-
-Lists workspaces for the authenticated user.
-
-### `POST /api/workspaces`
-
-Creates a workspace.
-
-### `GET /api/workspaces/{workspace_id}/members`
-
-Lists workspace members. Requires membership.
-
-### `POST /api/workspaces/{workspace_id}/invites`
-
-Creates an invitation. Requires owner/admin.
-
-### `GET /api/workspaces/{workspace_id}/brand-settings`
-
-Returns workspace brand settings.
-
-### `PUT /api/workspaces/{workspace_id}/brand-settings`
-
-Updates workspace brand settings. Requires owner/admin.
+Mirrors the Clerk user into PostgreSQL, ensures a workspace, and returns user/workspace state.
 
 ## Generation
 
-### `POST /generate-sow`
-
-Legacy synchronous demo-compatible generation endpoint.
-
 ### `POST /api/generations`
 
-Creates a durable generation job.
-
-Request:
+Creates a durable generation job after RBAC and quota checks.
 
 ```json
 {
-  "transcript_text": "Discovery call notes...",
+  "transcript_text": "Discovery notes...",
   "client_name": "Luma Retail Co.",
   "project_name": "Brand Identity + Webflow Website",
   "industry": "Web Design",
@@ -82,46 +42,37 @@ Request:
 }
 ```
 
-Response:
-
-```json
-{
-  "id": "uuid",
-  "org_id": "uuid",
-  "user_id": "uuid",
-  "status": "queued",
-  "current_step": "queued",
-  "progress": 0
-}
-```
-
 ### `GET /api/generations/{generation_id}`
 
 Returns job status.
 
 ### `GET /api/generations/{generation_id}/events`
 
-Streams job progress as Server-Sent Events.
+Streams generation progress as Server-Sent Events.
+
+### `POST /generate-sow`
+
+Legacy synchronous endpoint for local/demo compatibility. In production with Celery enabled, use `/api/generations`.
 
 ## SOWs
 
 ### `GET /sows` and `GET /api/sows`
 
-Lists SOWs for the authenticated user/workspace.
+Lists workspace SOWs.
 
 ### `GET /sows/{id}` and `GET /api/sows/{id}`
 
-Returns one SOW.
+Returns one SOW with structured content, markdown cache, quality scores, and risk flags.
 
 ### `PUT /sows/{id}` and `PUT /api/sows/{id}`
 
 Updates SOW content and creates a version.
 
-## SOW Sections
+## Sections
 
 ### `GET /api/sows/{sow_id}/sections`
 
-Lists structured SOW sections.
+Lists structured sections.
 
 ### `PUT /api/sows/{sow_id}/sections/{section_key}`
 
@@ -129,67 +80,89 @@ Updates one section.
 
 ### `POST /api/sows/{sow_id}/regenerate-section`
 
-Regenerates one section with an instruction.
+Regenerates one section only.
 
 ### `POST /api/sows/{sow_id}/risk-audit`
 
-Runs deterministic risk/quality validation against the current SOW.
+Runs deterministic SOW quality/risk validation.
 
-## Exports
+## PDF Exports
 
-### `POST /sows/{id}/export-pdf`
+### `POST /sows/{id}/export-pdf` and `POST /api/sows/{id}/export-pdf`
 
-Exports PDF. In production this should enqueue work and return export status or URL.
+Checks RBAC, subscription status, and PDF quota. In production with Celery enabled, returns a queued export. Otherwise generates a PDF, uploads it to private Supabase Storage, creates an export record, and returns a short-lived signed URL.
+
+### `GET /api/sows/{sow_id}/exports/{export_id}/download-url`
+
+Returns a fresh 10-minute signed download URL for a private PDF export.
 
 ## E-Sign
 
-### `POST /sows/{id}/send-signature`
+### `POST /sows/{id}/send-signature` and `POST /api/sows/{id}/send-signature`
 
-Sends SOW for e-signature through DocuSign or demo fallback.
+Requires owner/admin, active plan with e-sign, and available e-sign quota.
 
-### `POST /webhooks/docusign`
-
-Receives DocuSign status updates.
+```json
+{
+  "recipient_email": "client@example.com"
+}
+```
 
 ## Billing
 
 ### `GET /api/billing/plans`
 
-Lists available plan metadata.
+Lists Free, Solo, Studio, Agency, and Enterprise plan metadata.
+
+### `GET /api/billing/status`
+
+Returns current plan, subscription status, renewal date, usage, limits, and available billing actions.
+
+### `GET /api/billing/usage`
+
+Returns monthly usage counters and quotas.
 
 ### `POST /api/billing/checkout`
 
 Creates a PayPal subscription approval URL.
 
-Request:
+### `POST /api/billing/change-plan`
 
-```json
-{
-  "plan": "studio",
-  "success_url": "https://app.example.com/settings/billing?success=1",
-  "cancel_url": "https://app.example.com/settings/billing?cancel=1"
-}
-```
+Starts PayPal approval for plan change.
 
-### `GET /api/billing/usage`
+### `POST /api/billing/cancel`
 
-Returns usage summary and quotas.
+Cancels the active PayPal subscription from BriefToScope billing settings.
 
-### `POST /webhooks/paypal`
+### `POST /api/billing/reactivate`
 
-Receives PayPal subscription webhooks. Production verifies PayPal signature headers and stores events idempotently.
+Reactivates a suspended/canceled local subscription when provider state allows it.
+
+### `POST /webhooks/paypal` and `POST /api/webhooks/paypal`
+
+Processes PayPal subscription and payment events idempotently. Production verifies PayPal signatures.
 
 ## Templates
 
 ### `GET /api/templates`
 
-Lists industries.
+Lists supported industries.
 
 ### `GET /api/templates/{industry}`
 
-Returns template and clause intelligence data for one industry.
+Returns industry deliverables, exclusions, risk rules, hidden scope traps, acceptance criteria, and clause library data.
 
-## Error Format
+## Admin
+
+### `GET /api/admin/readiness`
+
+Admin allowlist-only readiness check.
+
+### `GET /api/admin/workers/health`
+
+Reports Redis connectivity, queue names, and worker health metadata.
+
+## Errors
 
 ```json
 {
@@ -197,11 +170,9 @@ Returns template and clause intelligence data for one industry.
 }
 ```
 
-Common statuses:
-
-- `400`: invalid request
 - `401`: missing or invalid JWT
 - `403`: missing workspace permission
-- `404`: entity not found
+- `402`: inactive subscription, quota exhausted, or plan feature unavailable
+- `404`: resource not found
 - `429`: rate limit exceeded
 - `500`: unexpected server error

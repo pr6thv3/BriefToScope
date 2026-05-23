@@ -343,6 +343,7 @@ class ScopeBuilder:
                 parts.append("\nStandard Industry Scope Recommendations:")
                 parts.append(f"Standard Deliverables: {json.dumps(template.standard_deliverables)}")
                 parts.append(f"Common Out-of-Scope Items (Exclusions): {json.dumps(template.common_out_of_scope_items)}")
+                parts.append(f"Hidden Scope Traps To Prevent: {json.dumps(template.hidden_scope_traps)}")
             except Exception as e:
                 logger.warning(f"[A3] Failed to load template context for prompt enrichment: {e}")
         if inp.tone:

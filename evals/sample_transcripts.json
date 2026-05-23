@@ -1,0 +1,162 @@
+[
+  {
+    "id": "web_design_01",
+    "industry": "Web Design",
+    "client_name": "Luma Retail Co.",
+    "project_name": "Brand Identity + Webflow Website",
+    "transcript": "We need an eight page Webflow website for our retail brand. We have some product photography but the team may send more assets later. Include homepage, about, shop landing, two product story pages, wholesale, contact, and careers. Basic SEO metadata is fine, but we may want SEO later. We need to launch before our fall campaign. Payment can be split 50/25/25 and two revision rounds are okay. Client will provide final copy and product images.",
+    "expected_risks": ["seo_mentioned_not_scoped", "client_assets_missing"]
+  },
+  {
+    "id": "web_design_02",
+    "industry": "Web Design",
+    "client_name": "Northstar Dental",
+    "project_name": "Practice Website Refresh",
+    "transcript": "The practice wants a cleaner website and online booking connected to whatever patient platform they use. They said it is probably an API or maybe a widget. They asked for custom animation on the hero and would like the site soon. No one has confirmed who writes the treatment page copy or who owns hosting.",
+    "expected_risks": ["copywriting_responsibility_unclear", "third_party_tools_unspecified", "custom_animation_complexity_unclear", "timeline_dependency_missing"]
+  },
+  {
+    "id": "branding_01",
+    "industry": "Branding",
+    "client_name": "Mira Cafe",
+    "project_name": "Cafe Brand Identity",
+    "transcript": "Mira needs a new logo system, typography, colors, and a simple brand guide. They want three concepts and two refinement rounds after selecting one direction. They may ask for packaging later. Trademark clearance is handled by their attorney. Payment is 50 percent to start, 30 after concept approval, 20 before source files are released.",
+    "expected_risks": []
+  },
+  {
+    "id": "branding_02",
+    "industry": "Branding",
+    "client_name": "Altus Labs",
+    "project_name": "Startup Naming and Identity",
+    "transcript": "They want us to help name the startup, create as many logo options as it takes, and send all Figma files right away because investors need them. They also asked whether we can check if the name is legally available. Timeline is tied to a board approval next month but the approver is not confirmed.",
+    "expected_risks": ["ownership_ip_unclear", "acceptance_criteria_missing", "timeline_dependency_missing"]
+  },
+  {
+    "id": "seo_01",
+    "industry": "SEO",
+    "client_name": "Boulder Gear Co.",
+    "project_name": "Technical SEO Audit",
+    "transcript": "The client wants a technical SEO audit, keyword mapping, and monthly Search Console reporting. Their developer will implement recommendations. No page-one ranking guarantee should be included. Payment is a monthly retainer paid at the start of the month. Acceptance is delivery of the audit, keyword map, and reporting dashboard.",
+    "expected_risks": []
+  },
+  {
+    "id": "seo_02",
+    "industry": "SEO",
+    "client_name": "CarePath Clinics",
+    "project_name": "SEO Growth Program",
+    "transcript": "They want SEO to rank first for every clinic page and expect blog articles if needed. The CMS access is not ready and the developer is shared with another vendor. They did not discuss payment milestones, revision rounds, or who approves medical claims.",
+    "expected_risks": ["seo_mentioned_not_scoped", "payment_milestone_missing", "timeline_dependency_missing"]
+  },
+  {
+    "id": "marketing_01",
+    "industry": "Marketing",
+    "client_name": "Frost & Fern",
+    "project_name": "Spring Campaign Launch",
+    "transcript": "The team needs campaign strategy, three email concepts, landing page copy, five paid social ads, and reporting for the spring launch. Media spend is paid by the client. Two revision rounds before launch. Payment is 50 percent upfront and 50 percent after campaign assets are approved.",
+    "expected_risks": []
+  },
+  {
+    "id": "marketing_02",
+    "industry": "Marketing",
+    "client_name": "Solace Fitness",
+    "project_name": "Lead Generation Campaign",
+    "transcript": "They want guaranteed leads and a viral campaign. They have not set ad spend yet and want us to handle ads, landing pages, emails, and maybe influencer outreach. They also need it live ASAP and will send brand assets later.",
+    "expected_risks": ["client_assets_missing", "timeline_dependency_missing"]
+  },
+  {
+    "id": "copywriting_01",
+    "industry": "Copywriting",
+    "client_name": "Noble HR",
+    "project_name": "Website Copy Sprint",
+    "transcript": "Noble HR needs copy for five website pages, two revision rounds, and final handoff in Google Docs. Client will provide subject-matter notes and approve compliance claims. Payment is half upfront and half on final approved copy. Acceptance is delivery of approved page copy.",
+    "expected_risks": []
+  },
+  {
+    "id": "copywriting_02",
+    "industry": "Copywriting",
+    "client_name": "Medora Wellness",
+    "project_name": "Clinic Content Refresh",
+    "transcript": "The clinic wants website copy, emails, and blog topics. They expect us to rewrite until the doctors are happy and may add pages later. Medical claim review is not assigned. They asked whether SEO keyword research is included.",
+    "expected_risks": ["unlimited_revisions_implied", "seo_mentioned_not_scoped"]
+  },
+  {
+    "id": "consulting_01",
+    "industry": "Consulting",
+    "client_name": "Arcadia Supply",
+    "project_name": "Operations Roadmap",
+    "transcript": "Arcadia wants stakeholder interviews, a process audit, and a final roadmap presentation. This engagement is advisory only. They will provide metrics, access to department leads, and a single approver. Payment is 50/50 and one revision round is included for the report.",
+    "expected_risks": []
+  },
+  {
+    "id": "consulting_02",
+    "industry": "Consulting",
+    "client_name": "Juniper Finance",
+    "project_name": "Data Strategy Advisory",
+    "transcript": "They asked for a strategy deck but also said we might implement dashboards after recommendations. Several stakeholders are involved and final approval is unclear. Data access depends on security approval and no payment milestone was discussed.",
+    "expected_risks": ["acceptance_criteria_missing", "timeline_dependency_missing", "payment_milestone_missing"]
+  },
+  {
+    "id": "app_development_01",
+    "industry": "App Development",
+    "client_name": "PilotPath",
+    "project_name": "MVP Booking App",
+    "transcript": "PilotPath needs a logged-in MVP with booking, admin calendar, Stripe-free invoicing handled manually, and email notifications. We will deliver clickable designs, backend API, frontend app, QA, and deployment. UAT lasts 14 days, bug fixes are included, and new features require change orders. Payment is 40/30/30.",
+    "expected_risks": []
+  },
+  {
+    "id": "app_development_02",
+    "industry": "App Development",
+    "client_name": "HarborOps",
+    "project_name": "Logistics Portal",
+    "transcript": "The portal needs CRM integration, custom API sync, and maybe OAuth. The client has not provided sandbox credentials. During testing they may ask for a few quick features. There is no acceptance criteria, payment milestone, or post-launch support owner yet.",
+    "expected_risks": ["third_party_tools_unspecified", "payment_milestone_missing", "acceptance_criteria_missing"]
+  },
+  {
+    "id": "video_01",
+    "industry": "Video Production",
+    "client_name": "Keystone Homes",
+    "project_name": "Brand Film",
+    "transcript": "Keystone needs a 90-second brand film, one shoot day, two interview setups, licensed music, color grade, and two rounds of edits. Client handles talent releases and location access. Payment is 50 percent before shoot, 25 after rough cut, 25 before final export.",
+    "expected_risks": []
+  },
+  {
+    "id": "video_02",
+    "industry": "Video Production",
+    "client_name": "Bloom Athletics",
+    "project_name": "Product Launch Video",
+    "transcript": "They want a launch video, vertical cutdowns, subtitles, stock footage, music, and maybe an extra shoot day if the weather is bad. Talent releases and location permits are not assigned. They asked for unlimited edits until the founder signs off.",
+    "expected_risks": ["unlimited_revisions_implied", "ownership_ip_unclear"]
+  },
+  {
+    "id": "web_design_03",
+    "industry": "Web Design",
+    "client_name": "Orchid Legal",
+    "project_name": "Law Firm Website",
+    "transcript": "The firm wants six responsive pages, CMS training, accessibility basics, and final launch support. They will provide attorney bios and final legal copy. Acceptance is staging approval, tested forms, and launch authorization. Payment is 50/25/25.",
+    "expected_risks": []
+  },
+  {
+    "id": "branding_03",
+    "industry": "Branding",
+    "client_name": "Hearth Foods",
+    "project_name": "CPG Identity",
+    "transcript": "They need logo, color, typography, brand voice notes, and packaging mockups for one product line. Print-ready packaging files are not included yet. Two rounds are included and final source files transfer after payment.",
+    "expected_risks": []
+  },
+  {
+    "id": "marketing_03",
+    "industry": "Marketing",
+    "client_name": "Terra Solar",
+    "project_name": "Referral Campaign",
+    "transcript": "The campaign includes strategy, referral landing page outline, five email drafts, six social posts, and analytics summary. Client owns ad spend and CRM list quality. Payment is due at kickoff and final asset approval. Approval criteria are final assets delivered in agreed formats.",
+    "expected_risks": []
+  },
+  {
+    "id": "app_development_03",
+    "industry": "App Development",
+    "client_name": "Mosaic Learning",
+    "project_name": "Learning Portal Phase One",
+    "transcript": "Phase one includes user accounts, course catalogue, lesson progress, admin upload, and basic reporting. Video hosting is through a third-party tool that the client will pay for. UAT sign-off defines completion. Maintenance and new reports are excluded unless separately scoped.",
+    "expected_risks": ["third_party_tools_unspecified"]
+  }
+]

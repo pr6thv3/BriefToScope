@@ -32,21 +32,55 @@
     {
       "label": "50/50 Billing",
       "milestones": [
-        { "percentage": "50%", "condition": "Due upon signing SOW" },
-        { "percentage": "50%", "condition": "Due prior to delivery of final raw files" }
+        {
+          "percentage": "50%",
+          "condition": "Due upon signing SOW"
+        },
+        {
+          "percentage": "50%",
+          "condition": "Due prior to delivery of final raw files"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Tone preferences shift mid-draft",
-      "trigger_terms": ["tone", "voice", "vibe", "style direction"],
+      "trigger_terms": [
+        "tone",
+        "voice",
+        "vibe",
+        "style direction"
+      ],
       "recommended_fix": "Secure written approval on tone examples before starting primary outlines."
     },
     {
       "risk": "Information delay stalls drafting",
-      "trigger_terms": ["information", "details", "subject details"],
+      "trigger_terms": [
+        "information",
+        "details",
+        "subject details"
+      ],
       "recommended_fix": "Set a timeline limit where delay in information auto-extends project delivery."
+    },
+    {
+      "risk": "Unlimited rewrites implied",
+      "trigger_terms": [
+        "rewrite until",
+        "as many edits",
+        "unlimited revisions"
+      ],
+      "recommended_fix": "Set included revision rounds and define strategic pivots as new scope."
+    },
+    {
+      "risk": "Claims approval missing",
+      "trigger_terms": [
+        "regulated",
+        "medical",
+        "financial claim",
+        "legal review"
+      ],
+      "recommended_fix": "Assign factual, compliance, and legal claim approval to the client."
     }
   ],
   "client_responsibilities": [
@@ -80,10 +114,18 @@
       "IP rights to all text drafts transfer to the client upon full payment clearance."
     ],
     "change_request": [
-      "Changes to primary layout requirements after outlines are approved require a layout change order fee."
+      "Changes to primary layout requirements after outlines are approved require a layout change order fee.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Delays in client feedback beyond 10 days will result in project closure and billing of completed work."
+      "Delays in client feedback beyond 10 days will result in project closure and billing of completed work.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Subject-matter input not provided before drafts are due",
+    "Unlimited copy rewrites requested as strategy changes",
+    "SEO research or conversion strategy assumed beyond writing scope",
+    "Legal, compliance, or technical claim review left undefined"
+  ]
 }

@@ -1,55 +1,55 @@
 # Deployment Guide
 
-## Recommended MVP Hosting
+## Target Paid-Beta Topology
 
 - Frontend: Vercel
-- API: Render or Railway
-- Worker: Render/Railway worker process using the backend image
+- API: Render web service
+- Worker: Render worker service using the same backend image
 - Redis: Upstash Redis
 - Database/storage: Supabase
-- DNS/WAF: Cloudflare
+- Payments: PayPal Subscriptions
+- Observability: Sentry, PostHog, optional Langfuse/Helicone
 
-## Build Commands
+## Frontend
 
-Frontend:
+Vercel uses [frontend/vercel.json](frontend/vercel.json).
 
-```bash
-cd frontend
-npm ci
-npm run build
-```
+Required env:
 
-Backend:
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_POSTHOG_KEY` optional
+- `NEXT_PUBLIC_POSTHOG_HOST` optional
+- `NEXT_PUBLIC_SENTRY_DSN` optional
+- `NEXT_PUBLIC_SUPPORT_EMAIL`
 
-```bash
-cd backend
-pip install -r requirements.txt
-playwright install chromium
-python -m pytest
-```
+## Backend API
 
-## Runtime Commands
-
-API:
+Render uses [render.yaml](render.yaml). API command:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-Worker:
+Production startup fails clearly when required env vars are missing and `DEMO_MODE=false`.
+
+## Celery Worker
+
+Worker command:
 
 ```bash
-celery -A app.workers.celery_app.celery_app worker -Q ai --loglevel=info
+celery -A app.workers.celery_app.celery_app worker -Q ai_generation,pdf_exports,emails,billing --loglevel=info
 ```
 
-## Required Production Environment
+Set `CELERY_ENABLED=true` and `REDIS_URL` for production. API and worker must share the same Supabase, PayPal, Clerk, storage, and observability env values.
 
-Backend:
+## Backend Required Env
 
 - `DEMO_MODE=false`
 - `OPENAI_API_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `CLERK_SECRET_KEY`
 - `CLERK_JWKS_URL`
 - `CLERK_ISSUER`
 - `PAYPAL_CLIENT_ID`
@@ -59,73 +59,67 @@ Backend:
 - `PAYPAL_PLAN_SOLO`
 - `PAYPAL_PLAN_STUDIO`
 - `PAYPAL_PLAN_AGENCY`
-- `REDIS_URL`
-- `CELERY_ENABLED=true`
 - `FRONTEND_URL`
 - `BACKEND_URL`
+- `SUPPORT_EMAIL`
+- `REDIS_URL`
+- `CELERY_ENABLED=true`
 
-Frontend:
+Optional:
 
-- `NEXT_PUBLIC_API_URL`
+- `ANTHROPIC_API_KEY`
+- `DOCUSIGN_CLIENT_ID`
+- `DOCUSIGN_CLIENT_SECRET`
+- `DOCUSIGN_ACCOUNT_ID`
+- `DOCUSIGN_BASE_URL`
+- `SENTRY_DSN`
+- `POSTHOG_KEY`
+- `LANGFUSE_PUBLIC_KEY`
+- `LANGFUSE_SECRET_KEY`
+- `HELICONE_API_KEY`
+- `ADMIN_EMAIL_ALLOWLIST`
 
-## Database Migration
+## Supabase
 
-Run base schema if the project is empty:
+1. Create a production Supabase project.
+2. Apply `database/production_foundation.sql`.
+3. Apply `database/production_rls_policies.sql`.
+4. Ensure the `sow-pdfs` bucket is private.
+5. Store only the service-role key on the backend, never in Vercel public env.
 
-1. `database/schema.sql`
-2. `database/indexes.sql`
-3. `database/rls_policies.sql`
-4. `database/seed.sql` if demo templates are desired
+## PayPal
 
-Run production upgrade:
+1. Create live PayPal app credentials.
+2. Create Solo, Studio, and Agency subscription plans.
+3. Add live plan IDs to backend env.
+4. Register webhook endpoint: `{BACKEND_URL}/webhooks/paypal`.
+5. Subscribe to subscription lifecycle, payment completed, payment failed/denied, canceled, suspended, refund, and reversal events.
+6. Copy PayPal webhook ID to `PAYPAL_WEBHOOK_ID`.
 
-```powershell
-cd database
-$env:DATABASE_URL="postgresql://..."
-.\apply_production_migrations.ps1
-```
+## Clerk
 
-This applies:
+1. Configure production frontend URL and callback URLs.
+2. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` in Vercel.
+3. Set `CLERK_SECRET_KEY`, `CLERK_JWKS_URL`, and `CLERK_ISSUER` in Render.
+4. Confirm protected routes redirect to `/sign-in`.
+5. Confirm `/api/auth/sync` creates the workspace in PostgreSQL.
 
-1. `production_foundation.sql`
-2. `production_rls_policies.sql`
+## Smoke Test
 
-## PayPal Setup
+After deploy:
 
-1. Create a PayPal REST app.
-2. Create subscription products/plans for Solo, Studio, and Agency.
-3. Set the plan IDs in backend environment variables.
-4. Register webhook endpoint: `POST {BACKEND_URL}/webhooks/paypal`.
-5. Enable subscription lifecycle events:
-   - `BILLING.SUBSCRIPTION.CREATED`
-   - `BILLING.SUBSCRIPTION.ACTIVATED`
-   - `BILLING.SUBSCRIPTION.UPDATED`
-   - `BILLING.SUBSCRIPTION.CANCELLED`
-   - `BILLING.SUBSCRIPTION.SUSPENDED`
-   - `BILLING.SUBSCRIPTION.EXPIRED`
-   - `PAYMENT.SALE.COMPLETED`
-   - `PAYMENT.SALE.REFUNDED`
-6. Store the PayPal webhook ID as `PAYPAL_WEBHOOK_ID`.
-
-## Clerk Setup
-
-1. Create a Clerk application.
-2. Configure allowed redirect URLs for frontend production and previews.
-3. Set `CLERK_JWKS_URL` and `CLERK_ISSUER`.
-4. Mirror users/workspaces through `/api/auth/sync`.
-
-## Release Process
-
-1. Open a draft PR.
-2. Verify CI passes.
-3. Run production build locally.
-4. Apply migrations in staging.
-5. Smoke test auth, generation, editor, PDF, PayPal checkout, and webhooks.
-6. Promote to production.
-7. Monitor logs, Sentry, queue depth, and provider errors for 24 hours.
+1. Sign up with Clerk.
+2. Confirm workspace sync.
+3. Generate one SOW.
+4. Review risk sidebar.
+5. Edit and save a section.
+6. Export private PDF and open signed URL.
+7. Start PayPal checkout on a test paid plan or live plan.
+8. Send a webhook test from PayPal and confirm local subscription status changes.
+9. Confirm `/api/admin/workers/health` is locked to allowlisted admins.
 
 ## Rollback
 
-- Frontend: redeploy last known good Vercel deployment.
-- API/worker: redeploy previous image.
-- Database: production migrations are additive; roll forward with corrective migrations rather than destructive rollback.
+- Vercel: redeploy previous successful frontend deployment.
+- Render API/worker: redeploy previous image.
+- Database: migrations are additive; roll forward with corrective SQL instead of destructive rollback.

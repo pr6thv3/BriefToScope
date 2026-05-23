@@ -34,22 +34,60 @@
     {
       "label": "50/30/20 Production Milestones",
       "milestones": [
-        { "percentage": "50%", "condition": "Due upon scheduling the shoot" },
-        { "percentage": "30%", "condition": "Due upon delivery of first rough cut review" },
-        { "percentage": "20%", "condition": "Due prior to delivery of master raw files" }
+        {
+          "percentage": "50%",
+          "condition": "Due upon scheduling the shoot"
+        },
+        {
+          "percentage": "30%",
+          "condition": "Due upon delivery of first rough cut review"
+        },
+        {
+          "percentage": "20%",
+          "condition": "Due prior to delivery of master raw files"
+        }
       ]
     }
   ],
   "risk_rules": [
     {
       "risk": "Weather disrupts outdoor shoots",
-      "trigger_terms": ["weather", "outdoor", "location", "rain"],
+      "trigger_terms": [
+        "weather",
+        "outdoor",
+        "location",
+        "rain"
+      ],
       "recommended_fix": "Incorporate a weather contingency backup shoot date in the schedule assumptions."
     },
     {
       "risk": "Music copyright clearance delays",
-      "trigger_terms": ["music license", "copyright", "soundtrack"],
+      "trigger_terms": [
+        "music license",
+        "copyright",
+        "soundtrack"
+      ],
       "recommended_fix": "Add standard licensing clause stating client covers all royalty fees."
+    },
+    {
+      "risk": "Licensing responsibility unclear",
+      "trigger_terms": [
+        "music",
+        "stock footage",
+        "talent",
+        "location"
+      ],
+      "recommended_fix": "Assign license costs, permissions, talent releases, and location permits."
+    },
+    {
+      "risk": "Additional deliverable formats implied",
+      "trigger_terms": [
+        "vertical cut",
+        "shorts",
+        "subtitles",
+        "social cutdowns"
+      ],
+      "recommended_fix": "List each export format, duration, and aspect ratio as a deliverable."
     }
   ],
   "client_responsibilities": [
@@ -83,10 +121,18 @@
       "Full usage rights transfer to client, while raw camera assets remain property of the studio."
     ],
     "change_request": [
-      "Changes to shooting dates within 7 days of production trigger a rescheduling fee of 15%."
+      "Changes to shooting dates within 7 days of production trigger a rescheduling fee of 15%.",
+      "Any request that changes approved deliverables, timing, assumptions, or acceptance criteria requires written approval before work begins."
     ],
     "timeline": [
-      "Timeline estimates assume standard weather patterns, and shifts may occur for natural safety factors."
+      "Timeline estimates assume standard weather patterns, and shifts may occur for natural safety factors.",
+      "Milestones depend on timely client feedback, access, content, approvals, and third-party provider availability."
     ]
-  }
+  },
+  "hidden_scope_traps": [
+    "Additional shoot days requested after pre-production approval",
+    "Talent, location, music, and licensing responsibilities undefined",
+    "Revision rounds expanding due to late stakeholder feedback",
+    "Alternate aspect ratios, cutdowns, or subtitles expected without scoping"
+  ]
 }

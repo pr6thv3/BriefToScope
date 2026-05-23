@@ -18,6 +18,7 @@ from app.models.ai_schemas import (
     ScopeBuilderOutput,
 )
 from app.utils.logger import get_logger
+from app.services.scope_risk_rules import detect_rule_based_risks, risks_to_flags
 
 logger = get_logger(__name__)
 
@@ -305,7 +306,7 @@ class RiskDetector:
             parsed = self._fallback_output(a1, a2, a3)
 
         # Derive backward-compat risk_flags from rich scope_creep_risks
-        result = self._derive_compat_fields(parsed)
+        result = self._apply_rule_engine(self._derive_compat_fields(parsed), a1, a2, a3)
         logger.info(
             f"[A4] Risk detection COMPLETED: "
             f"score={result.overall_risk_score}, "
@@ -441,7 +442,7 @@ class RiskDetector:
             flags.append(RiskFlagData(
                 severity=amb.severity,
                 title=amb.item,
-                description=amb.why_it_matter,
+                description=amb.why_it_matters,
                 suggested_fix=amb.suggested_clarification,
             ))
 
@@ -485,4 +486,34 @@ class RiskDetector:
                     "suggested_fix": r.get("recommended_fix", ""),
                 })
             data["risk_flags"] = flags
+        return RiskDetectorOutput.model_validate(data)
+
+    def _apply_rule_engine(
+        self,
+        output: RiskDetectorOutput,
+        a1: A1Output,
+        a2: BriefExtractorOutput,
+        a3: ScopeBuilderOutput,
+    ) -> RiskDetectorOutput:
+        data = output.model_dump()
+        rule_risks = detect_rule_based_risks([
+            a1.model_dump_json(),
+            a2.model_dump_json(),
+            a3.model_dump_json(),
+        ])
+        existing_ids = {risk.get("id") for risk in data.get("scope_creep_risks", [])}
+        new_risks = [risk for risk in rule_risks if risk.id not in existing_ids]
+        if not new_risks:
+            return output
+
+        data["scope_creep_risks"].extend([risk.model_dump() for risk in new_risks])
+        data["risk_flags"].extend([flag.model_dump() for flag in risks_to_flags(new_risks)])
+        data["overall_risk_score"] = min(100, max(data.get("overall_risk_score", 0), 45 + len(data["scope_creep_risks"]) * 7))
+        if data["overall_risk_score"] >= 70:
+            data["overall_risk_level"] = "high"
+        elif data["overall_risk_score"] >= 40:
+            data["overall_risk_level"] = "medium"
+        for risk in new_risks:
+            if risk.title not in data.get("critical_missing_items", []):
+                data["critical_missing_items"].append(risk.title)
         return RiskDetectorOutput.model_validate(data)

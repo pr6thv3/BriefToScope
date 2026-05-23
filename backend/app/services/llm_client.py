@@ -10,6 +10,7 @@ from app.services.demo_data import (
     get_fallback_risks,
     get_fallback_clauses,
 )
+from app.services.llm_trace_service import LLMTraceService
 
 logger = get_logger(__name__)
 
@@ -18,6 +19,7 @@ class LLMClient:
     def __init__(self):
         self.settings = get_settings()
         self._client = httpx.AsyncClient(timeout=120.0)
+        self.traces = LLMTraceService()
 
     async def chat_completion(
         self,
@@ -29,7 +31,7 @@ class LLMClient:
     ) -> str:
         """Send a chat completion with retry logic and provider fallbacks.
 
-        Priority: DEMO_MODE -> OpenAI -> Anthropic -> mock fallback.
+        Priority: DEMO_MODE -> OpenAI -> Anthropic -> explicit provider error.
         """
         if self.settings.demo_mode:
             logger.info("[LLM] DEMO_MODE: returning mock response")
@@ -59,8 +61,10 @@ class LLMClient:
                     logger.warning(f"[LLM] Anthropic attempt {attempt}/{max_retries} failed: {e}")
             logger.warning("[LLM] Anthropic exhausted retries.")
 
-        logger.warning("[LLM] No provider succeeded. Using mock fallback.")
-        return self._mock_response(messages)
+        logger.error("[LLM] No provider succeeded outside DEMO_MODE.")
+        raise AIServiceError(
+            "AI provider unavailable. Generation was not completed with a real model."
+        ) from last_error
 
     async def _openai_call(
         self, messages: list, model: str, temperature: float, response_format: Optional[dict]
@@ -76,17 +80,20 @@ class LLMClient:
             payload["response_format"] = response_format
 
         logger.debug(f"[LLM] OpenAI request: model={model}, temp={temperature}")
+        trace_start = self.traces.start("openai", model)
         resp = await self._client.post(
             url,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
+                **self.traces.request_headers("openai", model),
             },
             json=payload,
         )
         resp.raise_for_status()
         data = resp.json()
         content = data["choices"][0]["message"]["content"]
+        self.traces.finish("openai", model, trace_start, {"chars": len(content)})
         logger.debug(f"[LLM] OpenAI response received: {len(content)} chars")
         return content
 
@@ -113,6 +120,7 @@ class LLMClient:
             payload["system"] = system_msg
 
         logger.debug(f"[LLM] Anthropic request: model={payload['model']}, temp={temperature}")
+        trace_start = self.traces.start("anthropic", payload["model"])
         resp = await self._client.post(
             url,
             headers={
@@ -125,6 +133,7 @@ class LLMClient:
         resp.raise_for_status()
         data = resp.json()
         content = data["content"][0]["text"]
+        self.traces.finish("anthropic", payload["model"], trace_start, {"chars": len(content)})
         logger.debug(f"[LLM] Anthropic response received: {len(content)} chars")
         return content
 
