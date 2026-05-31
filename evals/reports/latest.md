@@ -1,6 +1,6 @@
 # BriefToScope AI Eval Report
 
-- Generated at: `2026-05-23T11:49:24.548462+00:00`
+- Generated at: `2026-05-31T17:46:43.136965+00:00`
 - Mode: `transcript_baseline`
 - Samples: `20`
 - Overall average: `67.9`
